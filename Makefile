@@ -14,29 +14,28 @@ RELEASE = $(TARGET)
 LIB = lib$(TARGET).a
 # ------------------------- #
 
-# 安装的路径
-prefix = /usr/local
-libdir = $(prefix)/lib
-includedir = $(prefix)/include
-
 # 递归的搜索所有SRC_PATH目录下的.SRC_TXT类型的文件
 rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
 						$(filter $2, $d))
 
-src = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
-obj = $(src:$(SRC_EXT)=o)
-header = $(src:$(SRC_EXT)=h)
+SRC = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
+OBJ = $(SRC:$(SRC_EXT)=o)
+HEADER = $(SRC:$(SRC_EXT)=h)
+EXE = $(OBJ:%.o=%)
 
-all: $(obj)
-	$(CC) $(CFLAGS) $(LD_LIBRARY_PATH) $^ $(LDFLAGS) -o $@
+all: $(OBJ) $(EXE)
+	$(MAKE) release
 
-$(obj): %.o : %.cpp
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
+%: %.o
+	$(CC) $(CFLAGS) -o $@ $<
 
 # ------------------------- #
 #          使用方法
 # ------------------------- #
-.PHONY: clean clean_all lib release tar install uninstall all
+.PHONY: clean clean_all lib release tar all
 
 # make : 编译
 # make clean: 清除编译的中间文件
@@ -47,37 +46,26 @@ $(obj): %.o : %.cpp
 # make install: 安装release库
 # make uninstall: 卸载release库
 
-# ------------------------- #
-SILENCE = 2>/dev/null # 安静的删除文件,没有多余的提示信息
-
 clean:
-	@-rm $(obj) $(TARGET) $(SILENCE)
-	@echo "[clean]"
+	-rm -f $(OBJ)
+	-rm -f $(EXE)
 
 clean_all:
-	@-rm -r $(RELEASE) $(SILENCE)
-	@-rm $(obj) $(LIB) $(TARGET) $(SILENCE)
-	@echo "clean all compiled files"
+	rm -r $(TARGET)
+	$(MAKE) clean
 
 lib: $(obj)
 	ar rsv lib$(TARGET).a $(obj)
 
 release:
 	$(MAKE) lib
+	mkdir -p $(RELEASE)/bin
 	mkdir -p $(RELEASE)/include/$(RELEASE)
 	mkdir -p $(RELEASE)/lib
-	cp $(header) $(RELEASE)/include/$(RELEASE)
-	mv $(LIB) $(RELEASE)/lib
-	@echo "\n[finished]: release package in $(RELEASE)/\n"
+	cp -v $(EXE) $(RELEASE)/bin
+	cp -v $(HEADER) $(RELEASE)/include/$(RELEASE)
+	mv -v $(LIB) $(RELEASE)/lib
 
 tar:
 	tar -cvf $(TARGET).tar $(RELEASE)/
 
-install:
-	mkdir -p $(libdir) $(includedir)/$(RELEASE)
-	cp $(LIB) $(libdir)/
-	cp $(header) $(includedir)/$(RELEASE)
-
-uninstall:
-	rm $(libdir)/$(LIB)
-	rm -r $(includedir)/$(RELEASE)

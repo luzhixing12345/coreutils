@@ -18,8 +18,8 @@ make
 │   ├── include     头文件
 │   └── lib         静态链接库
 ├── src
-│   └── ls          ls命令的所有相关文件
-│       └── main.c  每个目录下的main.c为入口
+│   ├── ls
+│   └── ping
 └── test            测试程序
 ```
 
