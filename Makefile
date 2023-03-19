@@ -46,6 +46,11 @@ all: $(OBJ) $(EXE)
 # make install: 安装release库
 # make uninstall: 卸载release库
 
+# Define variables for formatting
+CP_FORMAT = "[cp]\t%-20s -> %s\n"
+MV_FORMAT = "[mv]\t%-20s -> %s\n"
+
+
 clean:
 	-rm -f $(OBJ)
 	-rm -f $(EXE)
@@ -55,16 +60,16 @@ clean_all:
 	$(MAKE) clean
 
 lib: $(obj)
-	ar rsv lib$(TARGET).a $(obj)
+	@ar rsv lib$(TARGET).a $(obj)
 
 release:
 	$(MAKE) lib
 	mkdir -p $(RELEASE)/bin
 	mkdir -p $(RELEASE)/include/$(RELEASE)
 	mkdir -p $(RELEASE)/lib
-	cp -v $(EXE) $(RELEASE)/bin
-	cp -v $(HEADER) $(RELEASE)/include/$(RELEASE)
-	mv -v $(LIB) $(RELEASE)/lib
+	@cp -v $(EXE) $(RELEASE)/bin | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
+	@cp -v $(HEADER) $(RELEASE)/include/$(RELEASE) | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
+	@mv -v $(LIB) $(RELEASE)/lib | awk -v format=$(MV_FORMAT) '{printf format, $$2, $$4}'
 
 tar:
 	tar -cvf $(TARGET).tar $(RELEASE)/
