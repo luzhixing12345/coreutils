@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -O2
-TARGET = cmdkit
+TARGET = bst
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
 SRC_EXT = c
@@ -22,11 +22,11 @@ SRC = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
 OBJ = $(SRC:$(SRC_EXT)=o)
 HEADER = $(SRC:$(SRC_EXT)=h)
 EXE = $(OBJ:%.o=%)
+UTILS_HEADER = $(wildcard $(SRC_PATH)/*.h)
 
 all: $(OBJ) $(EXE)
-	$(MAKE) release
-
-%.o: %.c
+	
+%.o: %.c %.h $(UTILS_HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %: %.o
