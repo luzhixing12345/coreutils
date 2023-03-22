@@ -1,11 +1,11 @@
 
 
-#define BST_TYPE(t) #t
-#define BST_NAME(name) _##name
+#define UBX_TYPE(t) #t
+#define UBX_NAME(name) _##name
 
 
 
-#define BST_LENGTH_MISMATCH 65
-#define BST_UNSUPPORTED_TYPE 66
-#define BST_REQUIRE_ARGUMENT 67
-#define BST_FORMAT_ERROR 68
+#define UBX_LENGTH_MISMATCH 65
+#define UBX_UNSUPPORTED_TYPE 66
+#define UBX_REQUIRE_ARGUMENT 67
+#define UBX_FORMAT_ERROR 68

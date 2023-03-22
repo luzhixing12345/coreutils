@@ -61,14 +61,14 @@ typedef struct {
 } argparse;
 
 // built-in option macros
-#define BST_ARG_BOOL(...) { ARGPARSE_OPT_BOOLEAN, #__VA_ARGS__ }
-#define BST_ARG_INT(...) { ARGPARSE_OPT_INTEGER, #__VA_ARGS__ }
-#define BST_ARG_FLOAT(...)   { ARGPARSE_OPT_FLOAT, #__VA_ARGS__ }
-#define BST_ARG_STR(...)  { ARGPARSE_OPT_STRING, #__VA_ARGS__ }
-#define BST_ARG_GROUP(...)  { ARGPARSE_OPT_GROUP, #__VA_ARGS__ }
-#define BST_ARG_END(...) { ARGPARSE_OPT_END, #__VA_ARGS__ }
+#define UBX_ARG_BOOL(...) { ARGPARSE_OPT_BOOLEAN, #__VA_ARGS__ }
+#define UBX_ARG_INT(...) { ARGPARSE_OPT_INTEGER, #__VA_ARGS__ }
+#define UBX_ARG_FLOAT(...)   { ARGPARSE_OPT_FLOAT, #__VA_ARGS__ }
+#define UBX_ARG_STR(...)  { ARGPARSE_OPT_STRING, #__VA_ARGS__ }
+#define UBX_ARG_GROUP(...)  { ARGPARSE_OPT_GROUP, #__VA_ARGS__ }
+#define UBX_ARG_END(...) { ARGPARSE_OPT_END, #__VA_ARGS__ }
 
-void BST_argparse_init(argparse *parser, argparse_option *options) {
+void UBX_argparse_init(argparse *parser, argparse_option *options) {
     memset(parser, 0, sizeof(*parser));
     parser->description = NULL;
     parser->epilog = NULL;
@@ -77,7 +77,7 @@ void BST_argparse_init(argparse *parser, argparse_option *options) {
     return;
 }
 
-void BST_argparse_describe(argparse *parser, const char *description, const char *epilog) {
+void UBX_argparse_describe(argparse *parser, const char *description, const char *epilog) {
     parser->description = description;
     parser->epilog = epilog;
     return;
@@ -100,7 +100,7 @@ void argparse_argument_parse(argparse *parser) {
     }
 }
 
-void BST_argparse_parse(argparse *parser, int argc, const char **argv) {
+void UBX_argparse_parse(argparse *parser, int argc, const char **argv) {
     parser->argc = argc - 1;
     parser->argv = argv + 1;
     

@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -O2
-TARGET = bst
+TARGET = Unixbox
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
 SRC_EXT = c

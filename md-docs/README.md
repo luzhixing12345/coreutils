@@ -1,10 +1,10 @@
-# bst
+# Unixbox
 
-bst 是一个 [busybox](https://busybox.net/) 的实现, 集成了许多标准 Unix 工具的功能
+Unixbox 是一个 [busybox](https://busybox.net/) 的实现, 集成了许多标准 Unix 工具的功能
 
-同时 bst 也是一个轻量级的 Unix 的 C 库, 您可方便的链接此库以实现相关 Unix 工具的功能
+同时 Unixbox 也是一个轻量级的 Unix 的 C 库, 您可方便的链接此库以实现相关 Unix 工具的功能
 
-## bst 库的功能
+## Unixbox 库的功能
 
 - 字符串处理: 包括字符串转换,查找,替换,分割,格式化等操作
 - 网络编程：提供对套接字编程、网络协议编程等的封装，以及HTTP、TCP、UDP等协议的实现
