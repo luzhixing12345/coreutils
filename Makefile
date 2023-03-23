@@ -15,16 +15,19 @@ LIB = lib$(TARGET).a
 # ------------------------- #
 
 # 递归的搜索所有SRC_PATH目录下的.SRC_TXT类型的文件
-rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
-						$(filter $2, $d))
+# rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+# 						$(filter $2, $d))
 
-SRC = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
-OBJ = $(SRC:$(SRC_EXT)=o)
-HEADER = $(SRC:$(SRC_EXT)=h)
-EXE = $(OBJ:%.o=%)
+# SRC = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
+# OBJ = $(SRC:$(SRC_EXT)=o)
+# HEADER = $(SRC:$(SRC_EXT)=h)
+# EXE = $(OBJ:%.o=%)
 UTILS_HEADER = $(wildcard $(SRC_PATH)/*.h)
 
-all: $(OBJ) $(EXE)
+DIRECTORY = $(filter-out $(UTILS_HEADER),$(wildcard $(SRC_PATH)/*))
+
+all: $(DIRECTORY)
+	$(MAKE) -C $<
 	
 %.o: %.c %.h $(UTILS_HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -51,9 +54,8 @@ CP_FORMAT = "[cp]\t%-20s -> %s\n"
 MV_FORMAT = "[mv]\t%-20s -> %s\n"
 
 
-clean:
-	-rm -f $(OBJ)
-	-rm -f $(EXE)
+clean: $(DIRECTORY)
+	$(MAKE) -C $< clean
 
 clean_all:
 	rm -r $(TARGET)
