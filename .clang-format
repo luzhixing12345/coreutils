@@ -1,6 +1,6 @@
 BasedOnStyle: Google
 IndentWidth: 4
-AllowShortFunctionsOnASingleLine: All
+AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: false
 BraceWrapping:
@@ -13,3 +13,4 @@ BraceWrapping:
   BeforeCatch: true
   BeforeElse: true
   IndentBraces: true
+  AfterFor: true

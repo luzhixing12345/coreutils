@@ -47,9 +47,10 @@ int UBX_freeSplitStr(char ***result, int length) {
 
 
 /**
- * @brief 去除开头结尾的空格
+ * @brief 去除字符串开头结尾的的单词
  * 
- * @param str 字符串
+ * @param str
+ * @return char* 
  */
 char* UBX_trim(char *str) {
     char *new_str;

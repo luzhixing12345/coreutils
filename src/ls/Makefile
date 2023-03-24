@@ -8,10 +8,12 @@ SRC := $(wildcard *.c)
 OBJ = $(SRC:c=o)
 HEADER := $(wildcard *.h)
 
+all: $(TARGET)
+
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@
 
-%.o: %.c
+%.o: %.c $(HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
