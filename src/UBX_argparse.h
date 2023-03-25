@@ -20,13 +20,19 @@ typedef int argparse_callback(struct argparse *parser, const struct argparse_opt
 
 enum argparse_option_type {
     ARGPARSE_OPT_END,
+    ARGPARSE_OPT_BOOLEAN,
     ARGPARSE_OPT_INTEGER,
     ARGPARSE_OPT_STRING,
     ARGPARSE_OPT_INT_GROUP,
     ARGPARSE_OPT_STR_GROUP
 };
 
-enum argparse_flag { ARGPARSE_IGNORE_WARNING = 0x1 };
+enum argparse_flag {
+    UBX_ARGPARSE_IGNORE_WARNING = 0x1,  // 忽略警告
+    UBX_ARGPARSE_ENABLE_STICK = 0x2,    // 允许参数粘连 -O1 -Iinclude/
+    UBX_ARGPARSE_ENABLE_EQUAL = 0x4,    // 允许参数等号 -i=123
+    UBX_ARGPARSE_ENABLE_MULTI = 0x8     // 允许多个分离参数 -D __KERNEL__ -D __GNU__
+};
 
 typedef struct {
     enum argparse_option_type type;
@@ -55,6 +61,9 @@ typedef struct {
 } argparse;
 
 // built-in option macros
+
+#define UBX_ARG_BOOLEAN(a, ...) \
+    { ARGPARSE_OPT_BOOLEAN, a, #__VA_ARGS__ }
 #define UBX_ARG_INT(a, ...) \
     { ARGPARSE_OPT_INTEGER, a, #__VA_ARGS__ }
 #define UBX_ARG_FLOAT(a, ...) \
@@ -99,7 +108,7 @@ void UBX_argparse_describe(argparse *parser, const char *name, const char *descr
     return;
 }
 
-void free_argparse(argparse *parser) {
+void UBX_free_argparse(argparse *parser) {
     // fprintf(stderr, "argument parse error, free options\n");
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -201,16 +210,18 @@ int parse_optionstr(argparse_option *option) {
                     option->value = value;
                 } else if (!strcmp(key, "name")) {
                     option->name = value;
-                } else if (!strcmp(key, "flag")) {
-                    if (!strcmp(value, "UBX_MUST")) {
-                        free(value);
-                        option->must = 1;
-                    } else {
-                        fprintf(stderr, "unknown flag [flag=%s] in %s\n", value, str);
-                        free(key);
-                        return UBX_FORMAT_ERROR;
-                    }
-                } else {
+                }
+                // else if (!strcmp(key, "flag")) {
+                //     if (!strcmp(value, "UBX_MUST")) {
+                //         free(value);
+                //         option->must = 1;
+                //     } else {
+                //         fprintf(stderr, "unknown flag [flag=%s] in %s\n", value, str);
+                //         free(key);
+                //         return UBX_FORMAT_ERROR;
+                //     }
+                // }
+                else {
                     fprintf(stderr, "unsupported argument [%s=%s] in %s\n", key, value, str);
                     free(key);
                     free(value);
@@ -229,7 +240,7 @@ void argparse_option_parse(argparse *parser) {
     for (int i = 0; i < parser->args_number; i++) {
         if (parse_optionstr(&(parser->options[i]))) {
             fprintf(stderr, "parser init failed\n");
-            free_argparse(parser);
+            UBX_free_argparse(parser);
             exit(UBX_FORMAT_ERROR);
         }
     }
@@ -251,6 +262,10 @@ void UBX_argparse_info(argparse *parser) {
     } else {
         printf("[OPTION]...\n");
     }
+    if (parser->description) {
+        printf("%s\n", parser->description);
+    }
+    printf("\n");
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
@@ -275,7 +290,9 @@ void UBX_argparse_info(argparse *parser) {
         }
         printf("\n");
     }
-    printf("\n");
+    if (parser->epilog) {
+        printf("%s\n", parser->epilog);
+    }
 }
 
 /**
@@ -292,7 +309,6 @@ argparse_option *check_argparse_loptions(argparse *parser, const char *str) {
             continue;
         }
         if (!strcmp(option->long_name, str)) {
-            option->match = 1;
             printf("matched %s\n", option->long_name);
             return option;
         }
@@ -314,7 +330,6 @@ argparse_option *check_argparse_soptions(argparse *parser, const char *str) {
             continue;
         }
         if (!strcmp(option->short_name, str)) {
-            option->match = 1;
             printf("matched %s\n", option->short_name);
             return option;
         }
@@ -339,7 +354,6 @@ int check_argparse_groups(argparse *parser, const char *str) {
                 }
                 option->value = malloc(sizeof(char) * (strlen(str) + 1));
                 strcpy(option->value, str);
-                option->match = 1;
                 printf("matched [%s] for group [%s]\n", option->value, option->name);
                 return 0;
             }
@@ -347,6 +361,82 @@ int check_argparse_groups(argparse *parser, const char *str) {
     }
     return 1;
 }
+
+/**
+ * @brief 传递解析后的参数
+ *
+ * @param option
+ * @param enable_multi 是否允许多个分离参数
+ */
+void value_pass(argparse *parser, argparse_option *option) {
+    int enable_multi = parser->flag & UBX_ARGPARSE_ENABLE_MULTI;
+    printf("here\n");
+    // 不允许多个
+    if (!enable_multi) {
+        if (option->match && !(parser->flag & UBX_ARGPARSE_IGNORE_WARNING)) {
+            fprintf(stderr, "Warning: multi argument detected for [%s]\n", option->name);
+        }
+        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
+            *(char **)option->p = (char *)malloc(strlen(option->value));
+            strcpy(*(char **)option->p, option->value);
+            option->match = 1;
+        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
+            int value = 0;
+            char *temp = option->value;
+            while (*temp != '\0') {
+                if (*temp < '0' || *temp > '9') {
+                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    UBX_free_argparse(parser);
+                    exit(UBX_FORMAT_ERROR);
+                }
+                value = value * 10 + (*temp) - '0';
+                temp++;
+            }
+            *(int *)option->p = value;
+            option->match = 1;
+        }
+    } else {
+        // 多个匹配的情况
+        // -D __GNU__ -D __KERNEL
+        int match_number = ++option->match;
+        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
+            char **new_p = (char **)realloc(*(char ***)option->p,sizeof(char *)*match_number);
+
+            if (*(char ***)option->p && new_p != (*(char***)option->p)) {
+                for (int i=0;i<match_number-1;i++) {
+                    new_p[i] = (*(char***)option->p)[i];
+                }
+                free(*(char ***)option->p);
+            }
+            *(char***)option->p = new_p;
+            char *value_str = UBX_splice(option->value,0,-1);
+            (*(char***)option->p)[match_number-1] = value_str;
+
+        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
+            int value = 0;
+            char *temp = option->value;
+            while (*temp != '\0') {
+                if (*temp < '0' || *temp > '9') {
+                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    UBX_free_argparse(parser);
+                    exit(UBX_FORMAT_ERROR);
+                }
+                value = value * 10 + (*temp) - '0';
+                temp++;
+            }
+            int *new_p = (int *)realloc(*(int**)option->p, sizeof(int)*match_number);
+            if (*(char ***)option->p && new_p != (*(int**)option->p)) {
+                for (int i=0;i<match_number-1;i++) {
+                    new_p[i] = (*(int**)option->p)[i];
+                }
+                free(*(int**)option->p);
+            }
+            (*(int **)option->p) = new_p;
+            (*(int **)option->p)[match_number-1] = value;
+        }
+    }
+}
+
 
 void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
     for (int i = 1; i < argc; i++) {
@@ -361,17 +451,46 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
                     option = check_argparse_soptions(parser, argv[i]);
                 }
                 if (option == NULL) {
+                    if (parser->flag & UBX_ARGPARSE_ENABLE_EQUAL) {
+                        int pos = UBX_findChar(argv[i], '=');
+                        if (pos != -1 && pos == 2) {
+                            char *short_name = UBX_splice(argv[i], 0, 1);
+                            option = check_argparse_soptions(parser, short_name);
+                            free(short_name);
+                            if (option) {
+                                char *value = UBX_splice(argv[i], 3, -1);
+                                option->value = value;
+                                value_pass(parser, option);
+                                continue;
+                            }
+                        }
+                    }
+                    if (parser->flag & UBX_ARGPARSE_ENABLE_STICK) {
+                        char *short_name = UBX_splice(argv[i], 0, 1);
+                        option = check_argparse_soptions(parser, short_name);
+                        free(short_name);
+                        if (option) {
+                            char *value = UBX_splice(argv[i], 2, -1);
+                            option->value = value;
+                            value_pass(parser, option);
+                            continue;
+                        }
+                    }
                     fprintf(stderr, "Error: no match options for [%s]\n", argv[i]);
-                    free_argparse(parser);
+                    UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
+
                 } else {
+                    if (option->type == ARGPARSE_OPT_BOOLEAN) {
+                        continue;
+                    }
                     // 正确解析, 读取下一个参数
                     if (i == argc - 1) {
                         fprintf(stderr, "Error: option [%s] needs one argument\n", option->long_name);
-                        free_argparse(parser);
+                        UBX_free_argparse(parser);
                         exit(UBX_FORMAT_ERROR);
                     }
-                    if (argv[i + 1][0] == '-' && parser->flag & ARGPARSE_IGNORE_WARNING) {
+                    if (argv[i + 1][0] == '-' && !(parser->flag & UBX_ARGPARSE_IGNORE_WARNING)) {
                         fprintf(stderr, "Warning: [%s] will be passed as the argument for [%s]\n", argv[i + 1],
                                 argv[i]);
                     }
@@ -380,7 +499,7 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
                     }
                     option->value = malloc(sizeof(char) * (strlen(argv[i + 1]) + 1));
                     strcpy(option->value, argv[i + 1]);
-                    option->match = 1;
+                    value_pass(parser, option);
                     printf("matched [%s]:[%s]\n", option->long_name, argv[i + 1]);
                     i++;
                 }
@@ -390,22 +509,22 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
         // 当作正常参数传入
         if (check_argparse_groups(parser, argv[i])) {
             fprintf(stderr, "no groups left for [%s] in options\n", argv[i]);
-            free_argparse(parser);
+            UBX_free_argparse(parser);
             exit(UBX_FORMAT_ERROR);
         }
     }
 
     // UBX_MUST 检查必传参数
-    for (int i = 0; i < parser->args_number; i++) {
-        argparse_option *option = &(parser->options[i]);
-        if (option->must) {
-            if (!option->match) {
-                fprintf(stderr, "Error: argument option [%s] is must\n", option->name);
-                free_argparse(parser);
-                exit(UBX_FORMAT_ERROR);
-            }
-        }
-    }
+    // for (int i = 0; i < parser->args_number; i++) {
+    //     argparse_option *option = &(parser->options[i]);
+    //     if (option->must) {
+    //         if (!option->match) {
+    //             fprintf(stderr, "Error: argument option [%s] is must\n", option->name);
+    //             UBX_free_argparse(parser);
+    //             exit(UBX_FORMAT_ERROR);
+    //         }
+    //     }
+    // }
 }
 
 int check_valid_character(const char *str) {
@@ -439,7 +558,7 @@ void check_valid_options(argparse *parser) {
                 if (strcmp(option->name, l_name)) {
                     fprintf(stderr, "long_name --[%s] and name [%s] must be the same\n", l_name, option->name);
                     free(l_name);
-                    free_argparse(parser);
+                    UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
             } else {
@@ -451,7 +570,7 @@ void check_valid_options(argparse *parser) {
             // 没有long_name 的时候必须有 name
             if (!option->name) {
                 fprintf(stderr, "long_name and name have at least one\n");
-                free_argparse(parser);
+                UBX_free_argparse(parser);
                 exit(UBX_FORMAT_ERROR);
             }
         }
@@ -463,20 +582,20 @@ void check_valid_options(argparse *parser) {
             argparse_option *option2 = &(parser->options[j]);
             if (!strcmp(option1->name, option2->name)) {
                 fprintf(stderr, "Error: options have the same name [%s]\n", option1->name);
-                free_argparse(parser);
+                UBX_free_argparse(parser);
                 exit(UBX_FORMAT_ERROR);
             }
             if (option1->long_name && option2->long_name) {
                 if (!strcmp(option1->long_name, option2->long_name)) {
                     fprintf(stderr, "Error: options have the same long_name [%s]\n", option1->long_name);
-                    free_argparse(parser);
+                    UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
             }
             if (option1->short_name && option2->short_name) {
                 if (!strcmp(option1->short_name, option2->short_name)) {
                     fprintf(stderr, "Error: options have the same short_name [%s]\n", option1->short_name);
-                    free_argparse(parser);
+                    UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
             }
@@ -484,32 +603,14 @@ void check_valid_options(argparse *parser) {
     }
 }
 
-void value_pass(argparse *parser) {
-    for (int i = 0; i < parser->args_number; i++) {
-        argparse_option *option = &(parser->options[i]);
-        if (option->match) {
-            if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
-                *(char**)option->p = (char*)malloc(strlen(option->value));
-                strcpy(*(char**)option->p, option->value);
-                // printf("%s\n",*(char**)option->p);
-            } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
-                int value = 0;
-                char *temp = option->value;
-                while (*temp != '\0') {
-                    if (*temp < '0' || *temp > '9') {
-                        fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
-                        free_argparse(parser);
-                        exit(UBX_FORMAT_ERROR);
-                    }
-                    value = value * 10 + (*temp) - '0';
-                    temp++;
-                }
-                *(int *)option->p = value;
-            }
-        }
-    }
-}
 
+/**
+ * @brief 参数是否匹配
+ * 
+ * @param parser 
+ * @param name 
+ * @return int 如果未匹配返回0; 如果匹配,返回值为匹配的个数
+ */
 int UBX_ismatch(argparse *parser, char *name) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -531,9 +632,7 @@ int UBX_ismatch(argparse *parser, char *name) {
 void UBX_argparse_parse(argparse *parser, int argc, const char **argv) {
     argparse_option_parse(parser);
     check_valid_options(parser);
-    UBX_argparse_info(parser);
+
     argparse_parse_argv(parser, argc, argv);
-    value_pass(parser);
-    free_argparse(parser);
     return;
 }

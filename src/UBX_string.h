@@ -86,3 +86,18 @@ char* UBX_splice(const char *str, int start, int end) {
     return s;
 }
 
+/**
+ * @brief 找到字符串中一个字符最先出现的位置
+ * 
+ * @param str 
+ * @param c 
+ * @return int 未找到返回-1
+ */
+int UBX_findChar(const char *str,char c) {
+    
+    int n = strlen(str);
+    for (int i=0;i<n;i++) {
+        if (str[i] == c) return i;
+    }
+    return -1;
+}

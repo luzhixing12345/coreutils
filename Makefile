@@ -27,7 +27,9 @@ UTILS_HEADER = $(wildcard $(SRC_PATH)/*.h)
 DIRECTORY = $(filter-out $(UTILS_HEADER),$(wildcard $(SRC_PATH)/*))
 
 all: $(DIRECTORY)
-	$(MAKE) -C $<
+	@for dir in $^ ; do \
+		$(MAKE) -C $$dir ; \
+	done
 	
 %.o: %.c %.h $(UTILS_HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -55,7 +57,9 @@ MV_FORMAT = "[mv]\t%-20s -> %s\n"
 
 
 clean: $(DIRECTORY)
-	$(MAKE) -C $< clean
+	@for dir in $^ ; do \
+		$(MAKE) -C $$dir clean; \
+	done
 
 clean_all:
 	rm -r $(TARGET)
