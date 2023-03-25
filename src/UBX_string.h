@@ -66,3 +66,23 @@ char* UBX_trim(char *str) {
     new_str[length] = '\0';
     return new_str;
 }
+
+/**
+ * @brief 切片
+ * 
+ * @param str 
+ * @param start 起点index(包含)
+ * @param end 终点index(包含), end = -1 表示结尾
+ * @return char* 
+ */
+char* UBX_splice(const char *str, int start, int end) {
+    
+    if (end == -1) {
+        end = strlen(str)-1;
+    }
+    char *s = malloc(sizeof(char) * (end - start+2));
+    strncpy(s, str + start, end-start+1);
+    s[end-start+1] = '\0';
+    return s;
+}
+

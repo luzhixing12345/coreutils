@@ -3,6 +3,7 @@ IndentWidth: 4
 AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: false
+ColumnLimit: 120
 BraceWrapping:
   AfterFunction: true
   AfterClass: true
