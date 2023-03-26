@@ -10,13 +10,13 @@
 // #include <stdint.h>
 #include <ctype.h>
 
-#include "UBX_define.h"
-#include "UBX_string.h"
+#include "define.h"
+#include "string.h"
 
-struct argparse;
+struct UBX_argparse;
 struct argparse_option;
 
-typedef int argparse_callback(struct argparse *parser, const struct argparse_option *option);
+typedef int argparse_callback(struct UBX_argparse *parser, const struct argparse_option *option);
 
 enum argparse_option_type {
     ARGPARSE_OPT_END,
@@ -28,10 +28,12 @@ enum argparse_option_type {
 };
 
 enum argparse_flag {
-    UBX_ARGPARSE_IGNORE_WARNING = 0x1,  // 忽略警告
-    UBX_ARGPARSE_ENABLE_STICK = 0x2,    // 允许参数粘连 -O1 -Iinclude/
-    UBX_ARGPARSE_ENABLE_EQUAL = 0x4,    // 允许参数等号 -i=123
-    UBX_ARGPARSE_ENABLE_MULTI = 0x8     // 允许多个分离参数 -D __KERNEL__ -D __GNU__
+    UBX_ARGPARSE_IGNORE_WARNING = 1,        // 忽略警告
+    UBX_ARGPARSE_ENABLE_STICK = 1 << 1,     // 允许参数粘连 -O1 -Iinclude/
+    UBX_ARGPARSE_ENABLE_EQUAL = 1 << 2,     // 允许参数等号 -i=123
+    UBX_ARGPARSE_ENABLE_MULTI = 1 << 3,     // 允许多个分离参数 -D __KERNEL__ -D __GNU__
+    UBX_ARGPARSE_ACCEPT_MORE = 1 << 4,      // 允许参数过多
+    UBX_ARGPARSE_ENABLE_ARG_STICK = 1 << 5  // 允许boolean类型参数粘连
 };
 
 typedef struct {
@@ -58,7 +60,7 @@ typedef struct {
     const char *epilog;       // a description at the end
     int args_number;
     int flag;
-} argparse;
+} UBX_argparse;
 
 // built-in option macros
 
@@ -66,8 +68,6 @@ typedef struct {
     { ARGPARSE_OPT_BOOLEAN, a, #__VA_ARGS__ }
 #define UBX_ARG_INT(a, ...) \
     { ARGPARSE_OPT_INTEGER, a, #__VA_ARGS__ }
-#define UBX_ARG_FLOAT(a, ...) \
-    { ARGPARSE_OPT_FLOAT, a, #__VA_ARGS__ }
 #define UBX_ARG_STR(a, ...) \
     { ARGPARSE_OPT_STRING, a, #__VA_ARGS__ }
 #define UBX_ARG_INT_GROUP(a, ...) \
@@ -77,7 +77,7 @@ typedef struct {
 #define UBX_ARG_END(...) \
     { ARGPARSE_OPT_END, #__VA_ARGS__ }
 
-void UBX_argparse_init(argparse *parser, argparse_option *options, int flag) {
+void UBX_argparse_init(UBX_argparse *parser, argparse_option *options, int flag) {
     memset(parser, 0, sizeof(*parser));
     parser->name = NULL;
     parser->description = NULL;
@@ -101,14 +101,14 @@ void UBX_argparse_init(argparse *parser, argparse_option *options, int flag) {
     return;
 }
 
-void UBX_argparse_describe(argparse *parser, const char *name, const char *description, const char *epilog) {
+void UBX_argparse_describe(UBX_argparse *parser, const char *name, const char *description, const char *epilog) {
     parser->name = name;
     parser->description = description;
     parser->epilog = epilog;
     return;
 }
 
-void UBX_free_argparse(argparse *parser) {
+void UBX_free_argparse(UBX_argparse *parser) {
     // fprintf(stderr, "argument parse error, free options\n");
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -130,6 +130,8 @@ void UBX_free_argparse(argparse *parser) {
     }
     // fprintf(stderr, "finished free options\n");
 }
+
+void value_pass(UBX_argparse *parser, argparse_option *option);
 
 int parse_optionstr(argparse_option *option) {
     char *str = option->argument_str;
@@ -206,8 +208,6 @@ int parse_optionstr(argparse_option *option) {
                 free(argument);
                 if (!strcmp(key, "help")) {
                     option->help_info = value;
-                } else if (!strcmp(key, "default")) {
-                    option->value = value;
                 } else if (!strcmp(key, "name")) {
                     option->name = value;
                 }
@@ -236,7 +236,7 @@ int parse_optionstr(argparse_option *option) {
     return 0;
 }
 
-void argparse_option_parse(argparse *parser) {
+void argparse_option_parse(UBX_argparse *parser) {
     for (int i = 0; i < parser->args_number; i++) {
         if (parse_optionstr(&(parser->options[i]))) {
             fprintf(stderr, "parser init failed\n");
@@ -246,7 +246,7 @@ void argparse_option_parse(argparse *parser) {
     }
 }
 
-void UBX_argparse_info(argparse *parser) {
+void UBX_argparse_info(UBX_argparse *parser) {
     printf("Usage: %s ", parser->name);
     int counter = 0;
     for (int i = 0; i < parser->args_number; i++) {
@@ -302,14 +302,14 @@ void UBX_argparse_info(argparse *parser) {
  * @param str
  * @return argparse_option 返回匹配的option, 否则返回 NULL
  */
-argparse_option *check_argparse_loptions(argparse *parser, const char *str) {
+argparse_option *check_argparse_loptions(UBX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
             continue;
         }
         if (!strcmp(option->long_name, str)) {
-            printf("matched %s\n", option->long_name);
+            // printf("matched %s\n", option->long_name);
             return option;
         }
     }
@@ -323,14 +323,14 @@ argparse_option *check_argparse_loptions(argparse *parser, const char *str) {
  * @param str
  * @return argparse_option* 返回匹配的option, 否则返回 NULL
  */
-argparse_option *check_argparse_soptions(argparse *parser, const char *str) {
+argparse_option *check_argparse_soptions(UBX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
             continue;
         }
         if (!strcmp(option->short_name, str)) {
-            printf("matched %s\n", option->short_name);
+            // printf("matched %s\n", option->short_name);
             return option;
         }
     }
@@ -344,7 +344,7 @@ argparse_option *check_argparse_soptions(argparse *parser, const char *str) {
  * @param str
  * @return int 如果已经没有可解析的组则出现错误,返回1
  */
-int check_argparse_groups(argparse *parser, const char *str) {
+int check_argparse_groups(UBX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
@@ -352,9 +352,10 @@ int check_argparse_groups(argparse *parser, const char *str) {
                 if (option->value) {
                     free(option->value);
                 }
-                option->value = malloc(sizeof(char) * (strlen(str) + 1));
+                option->value = (char *)malloc(sizeof(char) * (strlen(str) + 1));
                 strcpy(option->value, str);
-                printf("matched [%s] for group [%s]\n", option->value, option->name);
+                // printf("matched [%s] for group [%s]\n", option->value, option->name);
+                value_pass(parser, option);
                 return 0;
             }
         }
@@ -368,9 +369,8 @@ int check_argparse_groups(argparse *parser, const char *str) {
  * @param option
  * @param enable_multi 是否允许多个分离参数
  */
-void value_pass(argparse *parser, argparse_option *option) {
+void value_pass(UBX_argparse *parser, argparse_option *option) {
     int enable_multi = parser->flag & UBX_ARGPARSE_ENABLE_MULTI;
-    printf("here\n");
     // 不允许多个
     if (!enable_multi) {
         if (option->match && !(parser->flag & UBX_ARGPARSE_IGNORE_WARNING)) {
@@ -400,17 +400,17 @@ void value_pass(argparse *parser, argparse_option *option) {
         // -D __GNU__ -D __KERNEL
         int match_number = ++option->match;
         if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
-            char **new_p = (char **)realloc(*(char ***)option->p,sizeof(char *)*match_number);
+            char **new_p = (char **)realloc(*(char ***)option->p, sizeof(char *) * match_number);
 
-            if (*(char ***)option->p && new_p != (*(char***)option->p)) {
-                for (int i=0;i<match_number-1;i++) {
-                    new_p[i] = (*(char***)option->p)[i];
+            if (*(char ***)option->p && new_p != (*(char ***)option->p)) {
+                for (int i = 0; i < match_number - 1; i++) {
+                    new_p[i] = (*(char ***)option->p)[i];
                 }
                 free(*(char ***)option->p);
             }
-            *(char***)option->p = new_p;
-            char *value_str = UBX_splice(option->value,0,-1);
-            (*(char***)option->p)[match_number-1] = value_str;
+            *(char ***)option->p = new_p;
+            char *value_str = UBX_splice(option->value, 0, -1);
+            (*(char ***)option->p)[match_number - 1] = value_str;
 
         } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
             int value = 0;
@@ -424,21 +424,20 @@ void value_pass(argparse *parser, argparse_option *option) {
                 value = value * 10 + (*temp) - '0';
                 temp++;
             }
-            int *new_p = (int *)realloc(*(int**)option->p, sizeof(int)*match_number);
-            if (*(char ***)option->p && new_p != (*(int**)option->p)) {
-                for (int i=0;i<match_number-1;i++) {
-                    new_p[i] = (*(int**)option->p)[i];
+            int *new_p = (int *)realloc(*(int **)option->p, sizeof(int) * match_number);
+            if (*(char ***)option->p && new_p != (*(int **)option->p)) {
+                for (int i = 0; i < match_number - 1; i++) {
+                    new_p[i] = (*(int **)option->p)[i];
                 }
-                free(*(int**)option->p);
+                free(*(int **)option->p);
             }
             (*(int **)option->p) = new_p;
-            (*(int **)option->p)[match_number-1] = value;
+            (*(int **)option->p)[match_number - 1] = value;
         }
     }
 }
 
-
-void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
+void argparse_parse_argv(UBX_argparse *parser, int argc, const char **argv) {
     for (int i = 1; i < argc; i++) {
         int argv_length = strlen(argv[i]);
         if (argv_length >= 2) {
@@ -451,6 +450,30 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
                     option = check_argparse_soptions(parser, argv[i]);
                 }
                 if (option == NULL) {
+                    if (parser->flag & UBX_ARGPARSE_ENABLE_ARG_STICK && argv[i][1] != '-') {
+                        char s[3] = {'-', '0', '\0'};
+                        int n = strlen(argv[i]);
+                        for (int j = 1; j < n; j++) {
+                            s[1] = argv[i][j];
+                            option = check_argparse_soptions(parser, s);
+                            if (option == NULL) {
+                                fprintf(stderr, "Error: no match options for [%c] in [%s]\n", argv[i][j], argv[i]);
+                                UBX_free_argparse(parser);
+                                exit(UBX_FORMAT_ERROR);
+                            } else {
+                                if (option->type != ARGPARSE_OPT_BOOLEAN) {
+                                    fprintf(stderr, "Error: only boolean type should be sticky for [%c] in [%s]\n",
+                                            argv[i][j], argv[i]);
+                                    UBX_free_argparse(parser);
+                                    exit(UBX_FORMAT_ERROR);
+                                } else {
+                                    option->match = 1;
+                                }
+                            }
+                        }
+                        continue;
+                    }
+
                     if (parser->flag & UBX_ARGPARSE_ENABLE_EQUAL) {
                         int pos = UBX_findChar(argv[i], '=');
                         if (pos != -1 && pos == 2) {
@@ -482,6 +505,7 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
 
                 } else {
                     if (option->type == ARGPARSE_OPT_BOOLEAN) {
+                        option->match = 1;
                         continue;
                     }
                     // 正确解析, 读取下一个参数
@@ -497,10 +521,10 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
                     if (option->value) {
                         free(option->value);
                     }
-                    option->value = malloc(sizeof(char) * (strlen(argv[i + 1]) + 1));
+                    option->value = (char *)malloc(sizeof(char) * (strlen(argv[i + 1]) + 1));
                     strcpy(option->value, argv[i + 1]);
                     value_pass(parser, option);
-                    printf("matched [%s]:[%s]\n", option->long_name, argv[i + 1]);
+                    // printf("matched [%s]:[%s]\n", option->long_name, argv[i + 1]);
                     i++;
                 }
                 continue;
@@ -508,9 +532,11 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
         }
         // 当作正常参数传入
         if (check_argparse_groups(parser, argv[i])) {
-            fprintf(stderr, "no groups left for [%s] in options\n", argv[i]);
-            UBX_free_argparse(parser);
-            exit(UBX_FORMAT_ERROR);
+            if (!(parser->flag & UBX_ARGPARSE_ACCEPT_MORE)) {
+                fprintf(stderr, "Error: no groups left for [%s] in options\n", argv[i]);
+                UBX_free_argparse(parser);
+                exit(UBX_FORMAT_ERROR);
+            }
         }
     }
 
@@ -530,14 +556,14 @@ void argparse_parse_argv(argparse *parser, int argc, const char **argv) {
 int check_valid_character(const char *str) {
     int length = strlen(str);
     for (int i = 0; i < length; i++) {
-        if (!(islower(str[i]) || str[i] == '_')) {
+        if (!(islower(str[i]) || str[i] == '_' || str[i] == '-')) {
             return 1;
         }
     }
     return 0;
 }
 
-void check_valid_options(argparse *parser) {
+void check_valid_options(UBX_argparse *parser) {
     // group 不重名
 
     for (int i = 0; i < parser->args_number; i++) {
@@ -546,10 +572,9 @@ void check_valid_options(argparse *parser) {
             char *l_name = UBX_splice(option->long_name, 2, -1);
             char *p = l_name;
 
-            // long_name 合法性 -> 小写/下划线
+            // long_name 合法性 -> 小写 - _
             if (check_valid_character(p)) {
-                fprintf(stderr,
-                        "Error: Only lowercase characters and underscores are legal characters instead of [%s]\n", p);
+                fprintf(stderr, "Error: only [a-z_-]are legal characters instead of [%s]\n", p);
                 free(p);
                 exit(UBX_FORMAT_ERROR);
             }
@@ -601,17 +626,25 @@ void check_valid_options(argparse *parser) {
             }
         }
     }
-}
 
+    if (parser->flag & UBX_ARGPARSE_ENABLE_ARG_STICK &&
+        ((parser->flag & UBX_ARGPARSE_ENABLE_EQUAL) || (parser->flag & UBX_ARGPARSE_ENABLE_STICK))) {
+        fprintf(stderr,
+                "Error: flag collasp for UBX_ARGPARSE_ENABLE_EQUAL with UBX_ARGPARSE_ENABLE_EQUAL or "
+                "UBX_ARGPARSE_ENABLE_STICK\n");
+        UBX_free_argparse(parser);
+        exit(UBX_FORMAT_ERROR);
+    }
+}
 
 /**
  * @brief 参数是否匹配
- * 
- * @param parser 
- * @param name 
+ *
+ * @param parser
+ * @param name
  * @return int 如果未匹配返回0; 如果匹配,返回值为匹配的个数
  */
-int UBX_ismatch(argparse *parser, char *name) {
+int UBX_ismatch(UBX_argparse *parser, char *name) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (!strcmp(option->name, name)) {
@@ -629,10 +662,9 @@ int UBX_ismatch(argparse *parser, char *name) {
  * @param argc
  * @param argv
  */
-void UBX_argparse_parse(argparse *parser, int argc, const char **argv) {
+void UBX_argparse_parse(UBX_argparse *parser, int argc, const char **argv) {
     argparse_option_parse(parser);
     check_valid_options(parser);
-
     argparse_parse_argv(parser, argc, argv);
     return;
 }

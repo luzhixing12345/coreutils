@@ -80,7 +80,7 @@ char* UBX_splice(const char *str, int start, int end) {
     if (end == -1) {
         end = strlen(str)-1;
     }
-    char *s = malloc(sizeof(char) * (end - start+2));
+    char *s = (char*)malloc(sizeof(char) * (end - start+2));
     strncpy(s, str + start, end-start+1);
     s[end-start+1] = '\0';
     return s;

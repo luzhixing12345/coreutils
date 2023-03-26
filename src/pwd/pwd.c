@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../UBX_argparse.h"
+#include "../argparse.h"
 
 int main(int argc, const char **argv)
 {
@@ -16,8 +16,9 @@ int main(int argc, const char **argv)
         UBX_ARG_END()
     }; 
 
-    argparse parser;
-    UBX_argparse_init(&parser, options, UBX_ARGPARSE_ENABLE_MULTI);
+    UBX_argparse parser;
+    UBX_argparse_init(&parser, options, UBX_ARGPARSE_ENABLE_MULTI|UBX_ARGPARSE_ENABLE_STICK);
+    UBX_argparse_describe(&parser,"pwd","","");
     UBX_argparse_parse(&parser, argc, argv);
 
     if (UBX_ismatch(&parser, "help")) {
