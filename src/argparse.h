@@ -197,13 +197,10 @@ int parse_optionstr(argparse_option *option) {
                     return UBX_FORMAT_ERROR;
                 }
                 char *key = UBX_splice(argument, 0, p - 1);
+                UBX_trim(&key);
                 // printf("[%s][%s][%d]\n",argument, key, p-1);
-                // 带双引号的
-                if (argument[p + 1] == '\"' && argument[argument_length - 1] == '\"') {
-                    p++;
-                    argument_length--;
-                }
                 char *value = UBX_splice(argument, p + 1, argument_length - 1);
+                UBX_trim(&value);
                 // printf("[%s] -> [%s]:[%s]\n",argument, key, value);
                 free(argument);
                 if (!strcmp(key, "help")) {

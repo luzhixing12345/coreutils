@@ -47,24 +47,26 @@ int UBX_freeSplitStr(char ***result, int length) {
 
 
 /**
- * @brief 去除字符串开头结尾的的单词
+ * @brief (原地操作)去除字符串开头结尾的的空格和 ""
  * 
  * @param str
- * @return char* 
+ * @return void
  */
-char* UBX_trim(char *str) {
+void UBX_trim(char **str_p) {
     char *new_str;
-    while (*str == ' ') {
+    char *str = *str_p;
+    while (*str == ' ' || *str == '\"') {
         str ++;
     }
     int length = strlen(str);
-    while (str[length-1] == ' ') {
+    while (str[length-1] == ' ' || str[length-1] == '\"') {
         length--;
     }
     new_str = (char*)malloc(length+1);
     strncpy(new_str, str, length);
     new_str[length] = '\0';
-    return new_str;
+    free((char*)*str_p);
+    *str_p = (char*)new_str;
 }
 
 /**
