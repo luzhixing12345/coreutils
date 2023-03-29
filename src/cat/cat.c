@@ -11,6 +11,10 @@
 int UBX_cat(const char *file_name) {
     struct stat file_state;
     int fd = open(file_name, O_RDONLY, 0);
+    if (fd < 0) {
+        perror("open failed");
+        exit(1);
+    }
     fstat(fd, &file_state);
 
     char *bufp = mmap(NULL, file_state.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
