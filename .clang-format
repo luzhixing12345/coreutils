@@ -3,16 +3,17 @@ IndentWidth: 4
 AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: false
-ColumnLimit: 120
-BinPackArguments: true
+ColumnLimit: 100
+BinPackArguments: false
 BraceWrapping:
+  AfterStruct: true
   AfterFunction: true
   AfterClass: true
-  AfterControlStatement: false
+  AfterControlStatement: true
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
   BeforeCatch: true
   BeforeElse: true
   IndentBraces: true
-  AfterFor: true
+  

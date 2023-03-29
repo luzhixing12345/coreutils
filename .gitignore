@@ -56,4 +56,8 @@ Unixbox/
 
 a
 a.c
-*
+
+src/ls/ls
+src/cat/cat
+src/stat/stat
+src/pwd/pwd

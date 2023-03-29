@@ -1,50 +1,60 @@
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../argparse.h"
 
+/**
+ * @brief 列出目录下的所有文件(不包含子目录)
+ *
+ * @param dir_name
+ * @param file_names
+ * @param self
+ */
+void UBX_ls_listfiles(const char *dir_name, char ***file_names, int self) {
+    DIR *dir_p;
+    struct dirent *dp;
+    if (!(dir_p = opendir(dir_name))) {
+        perror("opendir");
+        exit(1);
+    }
+    while ((dp = readdir(dir_p))) {
+        printf("%s ", dp->d_name);
+    }
+    printf("\n");
+    closedir(dir_p);
+}
+
 int main(int argc, const char **argv) {
-    int i;
-    int t;
-    char *s, *dest;
-    int src;
-    argparse_option options[] = {UBX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-                                 UBX_ARG_BOOLEAN(NULL, [-p][--hel][help = "show help information"]),
-                                 UBX_ARG_INT(&i, [-i][--input][help = "input file"]),
-                                 UBX_ARG_INT(&t, [-t][--target][help = "target file"]),
-                                 UBX_ARG_STR(&s, [-s][--string]),
-                                 UBX_ARG_STR_GROUP(&dest, [name = dest][help = "destination"]),
-                                 UBX_ARG_INT_GROUP(&src, [name = src][help = "source"]),
-                                 UBX_ARG_END()};
+    char *src;
+    argparse_option options[] = {
+        UBX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
+        UBX_ARG_BOOLEAN(NULL, [-a][--all][help = "show help information"]),
+        UBX_ARG_STR_GROUP(&src, [name = src][help = "source"]),
+        UBX_ARG_END()};
 
     UBX_argparse parser;
     UBX_argparse_init(&parser, options, UBX_ARGPARSE_ENABLE_EQUAL);
-    UBX_argparse_describe(&parser, "ls", "\nA brief description of what the program does and how it works.",
-                          "\nAdditional description of the program after the description of the arguments.");
+    UBX_argparse_describe(&parser, "ls", "", "");
     UBX_argparse_parse(&parser, argc, argv);
 
     if (UBX_ismatch(&parser, "help")) {
         UBX_argparse_info(&parser);
+        return 0;
     }
-    if (UBX_ismatch(&parser, "input")) {
-        printf("i = %d\n", i);
+    if (!UBX_ismatch(&parser, "src")) {
+        src = malloc(sizeof(char) * 2);
+        strcpy(src, ".");
     }
-    if (UBX_ismatch(&parser, "target")) {
-        printf("t = %d\n", t);
-    }
-    if (UBX_ismatch(&parser, "string")) {
-        printf("s = %s\n", s);
-    }
-    if (UBX_ismatch(&parser, "dest")) {
-        printf("dest = %s\n", dest);
-    }
-    if (UBX_ismatch(&parser, "src")) {
-        printf("src = %d\n", src);
-    }
-    UBX_free_argparse(&parser);
 
-    free(s);
-    free(dest);
+    if (UBX_ismatch(&parser, "all")) {
+    }
+
+    free(src);
+    UBX_free_argparse(&parser);
     return 0;
 }

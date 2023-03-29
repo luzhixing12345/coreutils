@@ -13,11 +13,6 @@
 #include "define.h"
 #include "string.h"
 
-struct UBX_argparse;
-struct argparse_option;
-
-typedef int argparse_callback(struct UBX_argparse *parser, const struct argparse_option *option);
-
 enum argparse_option_type {
     ARGPARSE_OPT_END,
     ARGPARSE_OPT_BOOLEAN,
@@ -101,7 +96,8 @@ void UBX_argparse_init(UBX_argparse *parser, argparse_option *options, int flag)
     return;
 }
 
-void UBX_argparse_describe(UBX_argparse *parser, const char *name, const char *description, const char *epilog) {
+void UBX_argparse_describe(UBX_argparse *parser, const char *name, const char *description,
+                           const char *epilog) {
     parser->name = name;
     parser->description = description;
     parser->epilog = epilog;
@@ -382,7 +378,8 @@ void value_pass(UBX_argparse *parser, argparse_option *option) {
             char *temp = option->value;
             while (*temp != '\0') {
                 if (*temp < '0' || *temp > '9') {
-                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    fprintf(
+                        stderr, "Error: argument assign to be int but get [%s]\n", option->value);
                     UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
@@ -414,7 +411,8 @@ void value_pass(UBX_argparse *parser, argparse_option *option) {
             char *temp = option->value;
             while (*temp != '\0') {
                 if (*temp < '0' || *temp > '9') {
-                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    fprintf(
+                        stderr, "Error: argument assign to be int but get [%s]\n", option->value);
                     UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
@@ -454,13 +452,19 @@ void argparse_parse_argv(UBX_argparse *parser, int argc, const char **argv) {
                             s[1] = argv[i][j];
                             option = check_argparse_soptions(parser, s);
                             if (option == NULL) {
-                                fprintf(stderr, "Error: no match options for [%c] in [%s]\n", argv[i][j], argv[i]);
+                                fprintf(stderr,
+                                        "Error: no match options for [%c] in [%s]\n",
+                                        argv[i][j],
+                                        argv[i]);
                                 UBX_free_argparse(parser);
                                 exit(UBX_FORMAT_ERROR);
                             } else {
                                 if (option->type != ARGPARSE_OPT_BOOLEAN) {
-                                    fprintf(stderr, "Error: only boolean type should be sticky for [%c] in [%s]\n",
-                                            argv[i][j], argv[i]);
+                                    fprintf(stderr,
+                                            "Error: only boolean type should be sticky for [%c] in "
+                                            "[%s]\n",
+                                            argv[i][j],
+                                            argv[i]);
                                     UBX_free_argparse(parser);
                                     exit(UBX_FORMAT_ERROR);
                                 } else {
@@ -507,12 +511,15 @@ void argparse_parse_argv(UBX_argparse *parser, int argc, const char **argv) {
                     }
                     // 正确解析, 读取下一个参数
                     if (i == argc - 1) {
-                        fprintf(stderr, "Error: option [%s] needs one argument\n", option->long_name);
+                        fprintf(
+                            stderr, "Error: option [%s] needs one argument\n", option->long_name);
                         UBX_free_argparse(parser);
                         exit(UBX_FORMAT_ERROR);
                     }
                     if (argv[i + 1][0] == '-' && !(parser->flag & UBX_ARGPARSE_IGNORE_WARNING)) {
-                        fprintf(stderr, "Warning: [%s] will be passed as the argument for [%s]\n", argv[i + 1],
+                        fprintf(stderr,
+                                "Warning: [%s] will be passed as the argument for [%s]\n",
+                                argv[i + 1],
                                 argv[i]);
                     }
                     if (option->value) {
@@ -578,7 +585,10 @@ void check_valid_options(UBX_argparse *parser) {
             if (option->name) {
                 // long_name 和 name 必须有一个 -> 同时存在的时候必须统一
                 if (strcmp(option->name, l_name)) {
-                    fprintf(stderr, "long_name --[%s] and name [%s] must be the same\n", l_name, option->name);
+                    fprintf(stderr,
+                            "long_name --[%s] and name [%s] must be the same\n",
+                            l_name,
+                            option->name);
                     free(l_name);
                     UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
@@ -609,14 +619,18 @@ void check_valid_options(UBX_argparse *parser) {
             }
             if (option1->long_name && option2->long_name) {
                 if (!strcmp(option1->long_name, option2->long_name)) {
-                    fprintf(stderr, "Error: options have the same long_name [%s]\n", option1->long_name);
+                    fprintf(stderr,
+                            "Error: options have the same long_name [%s]\n",
+                            option1->long_name);
                     UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
             }
             if (option1->short_name && option2->short_name) {
                 if (!strcmp(option1->short_name, option2->short_name)) {
-                    fprintf(stderr, "Error: options have the same short_name [%s]\n", option1->short_name);
+                    fprintf(stderr,
+                            "Error: options have the same short_name [%s]\n",
+                            option1->short_name);
                     UBX_free_argparse(parser);
                     exit(UBX_FORMAT_ERROR);
                 }
@@ -625,10 +639,12 @@ void check_valid_options(UBX_argparse *parser) {
     }
 
     if (parser->flag & UBX_ARGPARSE_ENABLE_ARG_STICK &&
-        ((parser->flag & UBX_ARGPARSE_ENABLE_EQUAL) || (parser->flag & UBX_ARGPARSE_ENABLE_STICK))) {
-        fprintf(stderr,
-                "Error: flag collasp for UBX_ARGPARSE_ENABLE_EQUAL with UBX_ARGPARSE_ENABLE_EQUAL or "
-                "UBX_ARGPARSE_ENABLE_STICK\n");
+        ((parser->flag & UBX_ARGPARSE_ENABLE_EQUAL) ||
+         (parser->flag & UBX_ARGPARSE_ENABLE_STICK))) {
+        fprintf(
+            stderr,
+            "Error: flag collasp for UBX_ARGPARSE_ENABLE_EQUAL with UBX_ARGPARSE_ENABLE_EQUAL or "
+            "UBX_ARGPARSE_ENABLE_STICK\n");
         UBX_free_argparse(parser);
         exit(UBX_FORMAT_ERROR);
     }

@@ -16,8 +16,9 @@ int UBX_cat(const char *file_name) {
         exit(1);
     }
     fstat(fd, &file_state);
-
+    
     char *bufp = mmap(NULL, file_state.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
     return write(1, bufp, file_state.st_size);
 }
 
