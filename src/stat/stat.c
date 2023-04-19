@@ -30,7 +30,7 @@ char *stat_file_type(struct stat *statbuf) {
     }
 }
 
-void UBX_stat(const char *name) {
+void XBOX_stat(const char *name) {
     struct stat statbuf;
     stat(name, &statbuf);
     printf("  File: %s\n", name);
@@ -50,25 +50,25 @@ void UBX_stat(const char *name) {
 int main(int argc, const char **argv) {
     char *src;
     argparse_option options[] = {
-        UBX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        UBX_ARG_STR_GROUP(&src, [name = src][help = "source"]),
-        UBX_ARG_END()};
+        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
+        XBOX_ARG_STR_GROUP(&src, [name = src][help = "source"]),
+        XBOX_ARG_END()};
 
-    UBX_argparse parser;
-    UBX_argparse_init(&parser, options, UBX_ARGPARSE_ENABLE_EQUAL);
-    UBX_argparse_describe(&parser, "ls", "", "");
-    UBX_argparse_parse(&parser, argc, argv);
+    XBOX_argparse parser;
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_EQUAL);
+    XBOX_argparse_describe(&parser, "ls", "", "");
+    XBOX_argparse_parse(&parser, argc, argv);
 
-    if (UBX_ismatch(&parser, "help")) {
-        UBX_argparse_info(&parser);
+    if (XBOX_ismatch(&parser, "help")) {
+        XBOX_argparse_info(&parser);
         return 0;
     }
-    if (!UBX_ismatch(&parser, "src")) {
-        UBX_argparse_info(&parser);
+    if (!XBOX_ismatch(&parser, "src")) {
+        XBOX_argparse_info(&parser);
         return 0;
     }
-    UBX_stat(src);
+    XBOX_stat(src);
     free(src);
-    UBX_free_argparse(&parser);
+    XBOX_free_argparse(&parser);
     return 0;
 }

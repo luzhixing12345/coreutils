@@ -1,65 +1,57 @@
-# Unixbox
+# xbox
 
-Unixbox 是一个 [busybox](https://busybox.net/) 的实现, 集成了许多标准 Unix 工具的功能
+xbox 是一个 [busybox](https://busybox.net/) 的实现, 集成了许多标准 Unix 工具的功能
 
-同时 Unixbox 也是一个轻量级的 Unix 的 C 库, 您可方便的链接此库以实现相关 Unix 工具的功能
+xbox 是一个轻量级的 Unix 命令行程序的函数库, 可以实现命令的 C 函数级调用
 
-- Unix 工具的 C 函数级调用
-- 命令行参数处理
-- 字符串处理: 包括字符串转换,查找,替换,分割,格式化等操作
+xbox 是一个轻量级的基础 C 库, 包括命令行参数处理和字符串处理
 
-## Compile
+## 编译和使用
+
+编译
 
 ```bash
 make
 ```
 
-默认编译可以得到一个子文件夹 `Unixbox/`
+安装: 意味着将以高优先级使用 xbox 编译得到的程序而非默
 
 ```bash
-├── Unixbox
+sudo make install
+```
+
+卸载
+
+```bash
+sudo make uninstall
+```
+
+### Linux C 库
+
+默认编译可以得到一个子文件夹 `xbox/`
+
+```bash
+├── xbox
 │   ├── bin         所有可执行文件
 │   ├── include     头文件
 │   └── lib         静态链接库
-├── src
-│   ├── ls
-│   └── ping
+├── src             源代码实现
 └── test            测试程序
 ```
 
-## Usage
-
-下面假定您已位于本项目的根目录下并且已经完成编译
-
-### Unix 工具
-
-如果您想使用 Unixbox 的 ls 命令, 您可以创建如下软链接以覆盖默认 ls
+您可以引入 `xbox/include` 下的相关头文件并链接 `xbox/lib/libxbox.a` 以实现函数调用
 
 ```bash
-ln -s ./Unixbox/bin/ls /usr/local/bin/ls
-```
-
-使用结束之后建议您取消此链接
-
-```bash
-rm /usr/local/bin/ls
-```
-
-### Unix C 库
-
-您可以引入 `Unixbox/include` 下的相关头文件并链接 `Unixbox/lib/libUnixbox.a` 以实现函数调用
-
-```bash
-gcc -IUnixbox/include -LUnixbox/lib main.c -lUnixbox -o main
+gcc -Ixbox/include -Lxbox/lib main.c -lxbox -o main
 ```
 
 或者您习惯 Makefile
 
 ```Makefile
 CC = gcc
-INCLUDE_DIRS += -IUnixbox/include
-LD_LIBRARY_PATH += -LUnixbox/lib
-LDFLAGS += Unixbox
+INCLUDE_DIRS += -Ixbox/include
+LD_LIBRARY_PATH += -Lxbox/lib
+LDFLAGS += xbox
 
 main: main.c
     $(CC) $(INCLUDE_DIRS) $(LD_LIBRARY_PATH) $^ $(LDFLAGS) -o $@
@@ -67,9 +59,9 @@ main: main.c
 
 ## 文档
 
-关于如何使用 Unixbox 的 Unix 工具请参考 [工具文档](https://luzhixing12345.github.io/Unixbox)
+关于如何使用 xbox 的 Linux 工具请参考 [工具文档](https://luzhixing12345.github.io/xbox)
 
-关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/Unixbox)
+关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/xbox)
 
 ## 参考
 

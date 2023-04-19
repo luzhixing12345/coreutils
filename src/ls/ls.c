@@ -15,7 +15,7 @@
  * @param file_names
  * @param self
  */
-void UBX_ls_listfiles(const char *dir_name, char ***file_names, int self) {
+void XBOX_ls_listfiles(const char *dir_name, char ***file_names, int self) {
     DIR *dir_p;
     struct dirent *dp;
     if (!(dir_p = opendir(dir_name))) {
@@ -32,29 +32,29 @@ void UBX_ls_listfiles(const char *dir_name, char ***file_names, int self) {
 int main(int argc, const char **argv) {
     char *src;
     argparse_option options[] = {
-        UBX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        UBX_ARG_BOOLEAN(NULL, [-a][--all][help = "show help information"]),
-        UBX_ARG_STR_GROUP(&src, [name = src][help = "source"]),
-        UBX_ARG_END()};
+        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
+        XBOX_ARG_BOOLEAN(NULL, [-a][--all][help = "show help information"]),
+        XBOX_ARG_STR_GROUP(&src, [name = src][help = "source"]),
+        XBOX_ARG_END()};
 
-    UBX_argparse parser;
-    UBX_argparse_init(&parser, options, UBX_ARGPARSE_ENABLE_EQUAL);
-    UBX_argparse_describe(&parser, "ls", "", "");
-    UBX_argparse_parse(&parser, argc, argv);
+    XBOX_argparse parser;
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_EQUAL);
+    XBOX_argparse_describe(&parser, "ls", "", "");
+    XBOX_argparse_parse(&parser, argc, argv);
 
-    if (UBX_ismatch(&parser, "help")) {
-        UBX_argparse_info(&parser);
+    if (XBOX_ismatch(&parser, "help")) {
+        XBOX_argparse_info(&parser);
         return 0;
     }
-    if (!UBX_ismatch(&parser, "src")) {
+    if (!XBOX_ismatch(&parser, "src")) {
         src = malloc(sizeof(char) * 2);
         strcpy(src, ".");
     }
 
-    if (UBX_ismatch(&parser, "all")) {
+    if (XBOX_ismatch(&parser, "all")) {
     }
 
     free(src);
-    UBX_free_argparse(&parser);
+    XBOX_free_argparse(&parser);
     return 0;
 }

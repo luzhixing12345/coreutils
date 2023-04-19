@@ -10,10 +10,10 @@
  *
  * @param str 待分割的字符串
  * @param c 分割所使用的字符
- * @param result 返回数组 (call UBX_freeSplitStr to free)
+ * @param result 返回数组 (call XBOX_freeSplitStr to free)
  * @param length 数组长度
  */
-void UBX_splitStr(char *str, char c, char ***result, int *length) {
+void XBOX_splitStr(char *str, char c, char ***result, int *length) {
     int n = strlen(str);
     int number = 1;
     int i;
@@ -36,7 +36,7 @@ void UBX_splitStr(char *str, char c, char ***result, int *length) {
 }
 
 
-int UBX_freeSplitStr(char ***result, int length) {
+int XBOX_freeSplitStr(char ***result, int length) {
     for (int i = 0; i < length; i++) {
         free((*result)[i]);
     }
@@ -52,7 +52,7 @@ int UBX_freeSplitStr(char ***result, int length) {
  * @param str
  * @return void
  */
-void UBX_trim(char **str_p) {
+void XBOX_trim(char **str_p) {
     char *new_str;
     char *str = *str_p;
     while (*str == ' ' || *str == '\"') {
@@ -77,7 +77,7 @@ void UBX_trim(char **str_p) {
  * @param end 终点index(包含), end = -1 表示结尾
  * @return char* 
  */
-char* UBX_splice(const char *str, int start, int end) {
+char* XBOX_splice(const char *str, int start, int end) {
     
     if (end == -1) {
         end = strlen(str)-1;
@@ -95,7 +95,7 @@ char* UBX_splice(const char *str, int start, int end) {
  * @param c 
  * @return int 未找到返回-1
  */
-int UBX_findChar(const char *str,char c) {
+int XBOX_findChar(const char *str,char c) {
     
     int n = strlen(str);
     for (int i=0;i<n;i++) {
