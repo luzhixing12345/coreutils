@@ -9,7 +9,8 @@
 
 // #include <stdint.h>
 #include <ctype.h>
-
+#include <stdlib.h>
+#include <string.h>
 #include "define.h"
 #include "string.h"
 
@@ -239,6 +240,30 @@ void argparse_option_parse(XBOX_argparse *parser) {
     }
 }
 
+static int option_cmp(const void *a, const void *b) {
+    argparse_option *p1 = (argparse_option*)a;
+    argparse_option* p2 = (argparse_option*)b;
+    if (p1->short_name) {
+        if (p2->short_name) {
+            char c1 = (p1->short_name)[1];
+            char c2 = (p2->short_name)[1];
+            char C1 = c1,C2 = c2;
+            if (c1 & 0x20) {
+                C1 = c1^0x20;
+            }
+            if (c2 & 0x20) {
+                C2 = c2^0x20;
+            }
+            if (C1 == C2) {
+                return c1 < c2;
+            } else {
+                return C1 > C2;
+            }
+        } else return 0;
+    }
+    return 1;
+}
+
 void XBOX_argparse_info(XBOX_argparse *parser) {
     printf("Usage: %s ", parser->name);
     int counter = 0;
@@ -259,6 +284,17 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         printf("%s\n", parser->description);
     }
     printf("\n");
+
+    int max_length = 0;
+    for (int i=0;i<parser->args_number;i++) {
+        argparse_option *option = &(parser->options[i]);
+        max_length = MAX(max_length,strlen(option->name));
+    }
+    // printf("max_length = %d\n",max_length);
+    max_length += XBOX_MAX_LENGTH_BIAS;
+
+    qsort(parser->options, parser->args_number,sizeof(argparse_option), option_cmp);
+
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
@@ -270,14 +306,11 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         printf("\t");
 
         if (option->long_name) {
-            printf("%s", option->long_name);
+            printf("%-*s", max_length,option->long_name);
+        } else {
+            printf("%-*s", max_length,"");
         }
-        int n = strlen(option->long_name);
-        if (n < 8) {
-            printf("\t\t");
-        } else if (n >= 8 && n < 16) {
-            printf("\t");
-        }
+        
         if (option->help_info) {
             printf("%s", option->help_info);
         }
@@ -601,7 +634,7 @@ void check_valid_options(XBOX_argparse *parser) {
         } else {
             // 没有long_name 的时候必须有 name
             if (!option->name) {
-                fprintf(stderr, "long_name and name have at least one\n");
+                fprintf(stderr, "Error: long_name and name have at least one [%s]\n",option->short_name);
                 XBOX_free_argparse(parser);
                 exit(XBOX_FORMAT_ERROR);
             }

@@ -14,7 +14,7 @@ xbox 是一个轻量级的基础 C 库, 包括命令行参数处理和字符串�
 make
 ```
 
-安装: 意味着将以高优先级使用 xbox 编译得到的程序而非默
+安装: 意味着将以高优先级使用 xbox 编译得到的程序而非默认 Linux 程序
 
 ```bash
 sudo make install
@@ -66,6 +66,7 @@ main: main.c
 ## 参考
 
 - [busybox](https://busybox.net/)
+- [glibc](https://github.com/bminor/glibc)
 - [Boost](https://www.boost.org/)
 - [filesystem](https://en.cppreference.com/w/cpp/filesystem)
 - [Poco](https://github.com/pocoproject/poco)
