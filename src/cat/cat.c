@@ -11,7 +11,11 @@
 
 #include "../argparse.h"
 
-
+// 全局变量
+static int show_end = 0;
+static int show_number = 0;
+static int line_number = 0;
+char **files = NULL;
 
 
 /**
@@ -29,6 +33,12 @@ void XBOX_cat(const char *file_name) {
     }
     char c;
     while ((c = fgetc(fp)) != EOF) {
+
+        // 一些cat的参数
+        if (show_end && c == '\n') {
+            printf("$");
+        }
+
         printf("%c",c);
     }
     return;
@@ -37,15 +47,15 @@ void XBOX_cat(const char *file_name) {
 
 
 int main(int argc, char const *argv[]) {
-    char **file = NULL;
+    
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_STR_GROUPS(&file, [name = FILE][help = "source"]),
+        XBOX_ARG_STR_GROUPS(&files, [name = FILE][help = "source"]),
         XBOX_ARG_BOOLEAN(NULL, [-A][--show-all][help = "equivalent to -vET"]),
         XBOX_ARG_BOOLEAN(NULL, [-b][--number-nonblank][help = "number noempty output lines, overrides -n"]),
         XBOX_ARG_BOOLEAN(NULL, [-e][name = e][help = "equivalent to -vE"]),
-        XBOX_ARG_BOOLEAN(NULL, [-E][--show-ends][help = "display $ at end of each line"]),
-        XBOX_ARG_BOOLEAN(NULL, [-n][--number][help = "number all output lines"]),
+        XBOX_ARG_BOOLEAN(&show_end, [-E][--show-ends][help = "display $ at end of each line"]),
+        XBOX_ARG_BOOLEAN(&show_number, [-n][--number][help = "number all output lines"]),
         XBOX_ARG_BOOLEAN(NULL, [-s][--squeeze-blank][help = "suppress repeated empty output lines"]),
         XBOX_ARG_BOOLEAN(NULL, [-t][name = t][help = "equivalent to -vT"]),
         XBOX_ARG_BOOLEAN(NULL, [-T][name = bigt][help = "display TAB character as ^I"]),
@@ -61,28 +71,33 @@ int main(int argc, char const *argv[]) {
                            "Concateate FILE(s) to standard output.\n\nWith no FILE, or when FILE is -, read standard "
                            "input.",
                            "\nExamples:\n  cat f - g Output f's contents, then standard input, then g's contents.\n  "
-                           "cat       Copy standard input to standard output.\nXBOX coreutils online help: "
+                           "cat       Copy standard input to standard output.\n\nXBOX coreutils online help: "
                            "<https://github.com/luzhixing12345/xbox>");
     XBOX_argparse_parse(&parser, argc, argv);
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
+        XBOX_free_argparse(&parser);
+        return 0;
+    }
+    if (XBOX_ismatch(&parser, "version")) {
+        printf("cat (XBOX coreutils) 0.0.1\n");
+        XBOX_free_argparse(&parser);
         return 0;
     }
     int n = XBOX_ismatch(&parser, "FILE");
-        // XBOX_cat(file);
-    printf("%d\n",n);
-    for (int i=0;i<n;i++) {
-        printf("%s\n",file[i]);
-        free(file[i]);
+    if (n) {
+        // printf("%d\n",n);
+        for (int i=0;i<n;i++) {
+            XBOX_cat(files[i]);
+            free(files[i]);
+        }
+        free(files);
+    } else {
+        XBOX_argparse_info(&parser);
+        XBOX_free_argparse(&parser);
+        return 0;
     }
-    free(file);
-    
-
-    if (XBOX_ismatch(&parser, "version")) {
-        printf("v0.0.1\n");
-    }
-
     XBOX_free_argparse(&parser);
     return 0;
 }

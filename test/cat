@@ -1,2 +1,3 @@
 cat -E $(FILE)
 cat -n $(FILE)
+cat *.h cat.h

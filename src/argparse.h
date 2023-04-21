@@ -174,6 +174,7 @@ int parse_optionstr(argparse_option *option) {
                         return XBOX_FORMAT_ERROR;
                     } else {
                         option->long_name = argument;
+                        // printf("[%d]: %s\n",__LINE__, option->long_name);
                     }
                 } else {
                     // -short_name
@@ -276,17 +277,23 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     int counter = 0;
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        if (option->type == ARGPARSE_OPT_STR_GROUP || option->type == ARGPARSE_OPT_INT_GROUP) {
-            printf("[%s] ", option->name);
+        if (option->type == ARGPARSE_OPT_STR_GROUP || option->type == ARGPARSE_OPT_INT_GROUP ||
+            option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
             counter++;
         }
     }
-    if (counter == parser->args_number) {
-        printf("\n");
-        return;
-    } else {
-        printf("[OPTION]...\n");
+    if (counter != parser->args_number) {
+        printf("[OPTION]... ");
     }
+    for (int i = 0; i < parser->args_number; i++) {
+        argparse_option *option = &(parser->options[i]);
+        if (option->type == ARGPARSE_OPT_STR_GROUP || option->type == ARGPARSE_OPT_INT_GROUP) {
+            printf("[%s] ", option->name);
+        } else if (option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
+            printf("[%s]... ", option->name);
+        }
+    }
+    printf("\n");
     if (parser->description) {
         printf("%s\n", parser->description);
     }
@@ -304,7 +311,8 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
+            option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
             continue;
         }
         if (option->short_name) {
@@ -338,11 +346,11 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
 argparse_option *check_argparse_loptions(XBOX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
+            option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
             continue;
         }
-        if (!strcmp(option->long_name, str)) {
-            // printf("matched %s\n", option->long_name);
+        if (option->long_name && !strcmp(option->long_name, str)) {
             return option;
         }
     }
@@ -359,10 +367,11 @@ argparse_option *check_argparse_loptions(XBOX_argparse *parser, const char *str)
 argparse_option *check_argparse_soptions(XBOX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
+            option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
             continue;
         }
-        if (!strcmp(option->short_name, str)) {
+        if (option->short_name && !strcmp(option->short_name, str)) {
             // printf("matched %s\n", option->short_name);
             return option;
         }
@@ -399,7 +408,7 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
             }
             option->value = (char *)malloc(sizeof(char) * (strlen(str) + 1));
             strcpy(option->value, str);
-            printf("[%d]: matched [%s] for group [%s]\n",__LINE__ ,option->value, option->name);
+            // printf("[%d]: matched [%s] for group [%s]\n", __LINE__, option->value, option->name);
             value_pass(parser, option);
             return 0;
         }
@@ -526,6 +535,9 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                                     exit(XBOX_FORMAT_ERROR);
                                 } else {
                                     option->match = 1;
+                                    if (option->p) {
+                                        *(int *)option->p = 1;
+                                    }
                                 }
                             }
                         }
@@ -564,6 +576,9 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                 } else {
                     if (option->type == ARGPARSE_OPT_BOOLEAN) {
                         option->match = 1;
+                        if (option->p) {
+                            *(int *)option->p = 1;
+                        }
                         continue;
                     }
                     // 正确解析, 读取下一个参数
