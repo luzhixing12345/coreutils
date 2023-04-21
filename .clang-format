@@ -3,7 +3,7 @@ IndentWidth: 4
 AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: false
-ColumnLimit: 100
+ColumnLimit: 120
 BinPackArguments: false
 BraceWrapping:
   AfterStruct: true
@@ -16,4 +16,3 @@ BraceWrapping:
   BeforeCatch: true
   BeforeElse: true
   IndentBraces: true
-  

@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "define.h"
 #include "string.h"
 
@@ -20,7 +21,9 @@ enum argparse_option_type {
     ARGPARSE_OPT_INTEGER,
     ARGPARSE_OPT_STRING,
     ARGPARSE_OPT_INT_GROUP,
-    ARGPARSE_OPT_STR_GROUP
+    ARGPARSE_OPT_INT_GROUPS,
+    ARGPARSE_OPT_STR_GROUP,
+    ARGPARSE_OPT_STR_GROUPS
 };
 
 enum argparse_flag {
@@ -68,8 +71,12 @@ typedef struct {
     { ARGPARSE_OPT_STRING, a, #__VA_ARGS__ }
 #define XBOX_ARG_INT_GROUP(a, ...) \
     { ARGPARSE_OPT_INT_GROUP, a, #__VA_ARGS__ }
+#define XBOX_ARG_INT_GROUPS(a, ...) \
+    { ARGPARSE_OPT_INT_GROUPS, a, #__VA_ARGS__ }
 #define XBOX_ARG_STR_GROUP(a, ...) \
     { ARGPARSE_OPT_STR_GROUP, a, #__VA_ARGS__ }
+#define XBOX_ARG_STR_GROUPS(a, ...) \
+    { ARGPARSE_OPT_STR_GROUPS, a, #__VA_ARGS__ }
 #define XBOX_ARG_END(...) \
     { ARGPARSE_OPT_END, #__VA_ARGS__ }
 
@@ -97,8 +104,7 @@ void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int fla
     return;
 }
 
-void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char *description,
-                           const char *epilog) {
+void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char *description, const char *epilog) {
     parser->name = name;
     parser->description = description;
     parser->epilog = epilog;
@@ -241,25 +247,26 @@ void argparse_option_parse(XBOX_argparse *parser) {
 }
 
 static int option_cmp(const void *a, const void *b) {
-    argparse_option *p1 = (argparse_option*)a;
-    argparse_option* p2 = (argparse_option*)b;
+    argparse_option *p1 = (argparse_option *)a;
+    argparse_option *p2 = (argparse_option *)b;
     if (p1->short_name) {
         if (p2->short_name) {
             char c1 = (p1->short_name)[1];
             char c2 = (p2->short_name)[1];
-            char C1 = c1,C2 = c2;
+            char C1 = c1, C2 = c2;
             if (c1 & 0x20) {
-                C1 = c1^0x20;
+                C1 = c1 ^ 0x20;
             }
             if (c2 & 0x20) {
-                C2 = c2^0x20;
+                C2 = c2 ^ 0x20;
             }
             if (C1 == C2) {
                 return c1 < c2;
             } else {
                 return C1 > C2;
             }
-        } else return 0;
+        } else
+            return 0;
     }
     return 1;
 }
@@ -286,14 +293,14 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     printf("\n");
 
     int max_length = 0;
-    for (int i=0;i<parser->args_number;i++) {
+    for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        max_length = MAX(max_length,strlen(option->name));
+        max_length = MAX(max_length, strlen(option->name));
     }
     // printf("max_length = %d\n",max_length);
     max_length += XBOX_MAX_LENGTH_BIAS;
 
-    qsort(parser->options, parser->args_number,sizeof(argparse_option), option_cmp);
+    qsort(parser->options, parser->args_number, sizeof(argparse_option), option_cmp);
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -306,11 +313,11 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         printf("\t");
 
         if (option->long_name) {
-            printf("%-*s", max_length,option->long_name);
+            printf("%-*s", max_length, option->long_name);
         } else {
-            printf("%-*s", max_length,"");
+            printf("%-*s", max_length, "");
         }
-        
+
         if (option->help_info) {
             printf("%s", option->help_info);
         }
@@ -373,6 +380,7 @@ argparse_option *check_argparse_soptions(XBOX_argparse *parser, const char *str)
 int check_argparse_groups(XBOX_argparse *parser, const char *str) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
+
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP) {
             if (!option->match) {
                 if (option->value) {
@@ -384,6 +392,16 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
                 value_pass(parser, option);
                 return 0;
             }
+        }
+        if (option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
+            if (option->value) {
+                free(option->value);
+            }
+            option->value = (char *)malloc(sizeof(char) * (strlen(str) + 1));
+            strcpy(option->value, str);
+            printf("[%d]: matched [%s] for group [%s]\n",__LINE__ ,option->value, option->name);
+            value_pass(parser, option);
+            return 0;
         }
     }
     return 1;
@@ -402,17 +420,18 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         if (option->match && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
             fprintf(stderr, "Warning: multi argument detected for [%s]\n", option->name);
         }
-        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP ||
+            option->type == ARGPARSE_OPT_STR_GROUPS) {
             *(char **)option->p = (char *)malloc(strlen(option->value));
             strcpy(*(char **)option->p, option->value);
             option->match = 1;
-        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
+        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP ||
+                   option->type == ARGPARSE_OPT_INT_GROUPS) {
             int value = 0;
             char *temp = option->value;
             while (*temp != '\0') {
                 if (*temp < '0' || *temp > '9') {
-                    fprintf(
-                        stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
                 }
@@ -421,14 +440,18 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             }
             *(int *)option->p = value;
             option->match = 1;
+        } else {
+            fprintf(stderr, "Error: unknown option type for [%s]\n", option->name);
+            XBOX_free_argparse(parser);
+            exit(XBOX_FORMAT_ERROR);
         }
     } else {
         // 多个匹配的情况
         // -D __GNU__ -D __KERNEL
         int match_number = ++option->match;
-        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP ||
+            option->type == ARGPARSE_OPT_STR_GROUPS) {
             char **new_p = (char **)realloc(*(char ***)option->p, sizeof(char *) * match_number);
-
             if (*(char ***)option->p && new_p != (*(char ***)option->p)) {
                 for (int i = 0; i < match_number - 1; i++) {
                     new_p[i] = (*(char ***)option->p)[i];
@@ -439,13 +462,13 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             char *value_str = XBOX_splice(option->value, 0, -1);
             (*(char ***)option->p)[match_number - 1] = value_str;
 
-        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP) {
+        } else if (option->type == ARGPARSE_OPT_INTEGER || option->type == ARGPARSE_OPT_INT_GROUP ||
+                   option->type == ARGPARSE_OPT_INT_GROUPS) {
             int value = 0;
             char *temp = option->value;
             while (*temp != '\0') {
                 if (*temp < '0' || *temp > '9') {
-                    fprintf(
-                        stderr, "Error: argument assign to be int but get [%s]\n", option->value);
+                    fprintf(stderr, "Error: argument assign to be int but get [%s]\n", option->value);
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
                 }
@@ -461,6 +484,10 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             }
             (*(int **)option->p) = new_p;
             (*(int **)option->p)[match_number - 1] = value;
+        } else {
+            fprintf(stderr, "Error: unknown option type for [%s]\n", option->name);
+            XBOX_free_argparse(parser);
+            exit(XBOX_FORMAT_ERROR);
         }
     }
 }
@@ -485,10 +512,7 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                             s[1] = argv[i][j];
                             option = check_argparse_soptions(parser, s);
                             if (option == NULL) {
-                                fprintf(stderr,
-                                        "Error: no match options for [%c] in [%s]\n",
-                                        argv[i][j],
-                                        argv[i]);
+                                fprintf(stderr, "Error: no match options for [%c] in [%s]\n", argv[i][j], argv[i]);
                                 XBOX_free_argparse(parser);
                                 exit(XBOX_FORMAT_ERROR);
                             } else {
@@ -544,16 +568,13 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                     }
                     // 正确解析, 读取下一个参数
                     if (i == argc - 1) {
-                        fprintf(
-                            stderr, "Error: option [%s] needs one argument\n", option->long_name);
+                        fprintf(stderr, "Error: option [%s] needs one argument\n", option->long_name);
                         XBOX_free_argparse(parser);
                         exit(XBOX_FORMAT_ERROR);
                     }
                     if (argv[i + 1][0] == '-' && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-                        fprintf(stderr,
-                                "Warning: [%s] will be passed as the argument for [%s]\n",
-                                argv[i + 1],
-                                argv[i]);
+                        fprintf(
+                            stderr, "Warning: [%s] will be passed as the argument for [%s]\n", argv[i + 1], argv[i]);
                     }
                     if (option->value) {
                         free(option->value);
@@ -618,10 +639,7 @@ void check_valid_options(XBOX_argparse *parser) {
             if (option->name) {
                 // long_name 和 name 必须有一个 -> 同时存在的时候必须统一
                 if (strcmp(option->name, l_name)) {
-                    fprintf(stderr,
-                            "long_name --[%s] and name [%s] must be the same\n",
-                            l_name,
-                            option->name);
+                    fprintf(stderr, "long_name --[%s] and name [%s] must be the same\n", l_name, option->name);
                     free(l_name);
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
@@ -634,7 +652,7 @@ void check_valid_options(XBOX_argparse *parser) {
         } else {
             // 没有long_name 的时候必须有 name
             if (!option->name) {
-                fprintf(stderr, "Error: long_name and name have at least one [%s]\n",option->short_name);
+                fprintf(stderr, "Error: long_name and name have at least one [%s]\n", option->short_name);
                 XBOX_free_argparse(parser);
                 exit(XBOX_FORMAT_ERROR);
             }
@@ -652,18 +670,14 @@ void check_valid_options(XBOX_argparse *parser) {
             }
             if (option1->long_name && option2->long_name) {
                 if (!strcmp(option1->long_name, option2->long_name)) {
-                    fprintf(stderr,
-                            "Error: options have the same long_name [%s]\n",
-                            option1->long_name);
+                    fprintf(stderr, "Error: options have the same long_name [%s]\n", option1->long_name);
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
                 }
             }
             if (option1->short_name && option2->short_name) {
                 if (!strcmp(option1->short_name, option2->short_name)) {
-                    fprintf(stderr,
-                            "Error: options have the same short_name [%s]\n",
-                            option1->short_name);
+                    fprintf(stderr, "Error: options have the same short_name [%s]\n", option1->short_name);
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
                 }
@@ -672,12 +686,10 @@ void check_valid_options(XBOX_argparse *parser) {
     }
 
     if (parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK &&
-        ((parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) ||
-         (parser->flag & XBOX_ARGPARSE_ENABLE_STICK))) {
-        fprintf(
-            stderr,
-            "Error: flag collasp for XBOX_ARGPARSE_ENABLE_EQUAL with XBOX_ARGPARSE_ENABLE_EQUAL or "
-            "XBOX_ARGPARSE_ENABLE_STICK\n");
+        ((parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) || (parser->flag & XBOX_ARGPARSE_ENABLE_STICK))) {
+        fprintf(stderr,
+                "Error: flag collasp for XBOX_ARGPARSE_ENABLE_EQUAL with XBOX_ARGPARSE_ENABLE_EQUAL or "
+                "XBOX_ARGPARSE_ENABLE_STICK\n");
         XBOX_free_argparse(parser);
         exit(XBOX_FORMAT_ERROR);
     }
