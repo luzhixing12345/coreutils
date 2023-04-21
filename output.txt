@@ -1,0 +1,22 @@
+$
+     1	import os$
+     2	import subprocess$
+$
+     3	def main():$
+     4	    $
+     5	    test_dir = 'testfiles'$
+     6	    target_dir = 'src'$
+     7	    exe_names = os.listdir(test_dir)$
+     8	    $
+     9	    for exe_name in exe_names:$
+    10	        $
+    11	        with open(os.path.join(test_dir,exe_name),'r',encoding='utf-8') as f:$
+    12	            shell_cmds = f.read().split('\n')$
+    13	        $
+    14	        # 默认程序$
+    15	        for shell_cmd in shell_cmds:$
+    16	            with open('output.txt','w') as f:$
+    17	                subprocess.call('ls',stdout=f)$
+$
+    18	if __name__ == "__main__":$
+    19	    main()
