@@ -7,3 +7,5 @@ libXBX:
 LinuxC:
 - man: 1
 - 文件IO: 2
+- fcntl: 3
+- ioctl: 4

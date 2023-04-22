@@ -12,6 +12,10 @@ int open(const char *pathname, int flags);
 int open(const char *pathname, int flags, mode_t mode);
 ```
 
+flag 的参数必须要包含 `O_RDONLY` `O_WRONLY` `O_RDWR` 三者中的一个,且只有一个(read-only, write-only, or read/write)
+
+除此之外还有一些 flag 参数, 比如 `O_TRUNC`(截断) `O_CREAT`(创建) `O_NONBLOCK` 非阻塞等等, 如果文件需要被创建, 则还需要传入 mode 参数
+
 ```c
 #include <unistd.h>
 
@@ -20,7 +24,14 @@ int close(int fd);
 
 参数fd是要关闭的文件描述符。当一个进程终止时，内核对该进程所有尚未关闭的文件描述符调用close关闭，所以即使用户程序不调用close，在终止时内核也会自动关闭它打开的所有文件, 但是程序中应该手动关闭. 由open返回的文件描述符一定是该进程尚未使用的**最小**描述符。
 
+```c
+#include <sys/types.h>
+#include <unistd.h>
 
+off_t lseek(int fd, off_t offset, int whence);
+```
+
+偏移 fd, whence 三个值  `SEEK_SET` `SEEK_CUR` `SEEK_END`, offset 正负代表后移和前移, 返回到文件头的偏移量
 
 ## C 标准库
 
@@ -32,6 +43,10 @@ int fgetc(FILE *stream);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 int fclose(FILE *stream);
+
+int fseek(FILE *stream, long offset, int whence); // 类似 lseek
+long ftell(FILE *stream); // 返回指针位置
+void rewind(FILE *stream); // 回到开头
 ```
 
 fopen(3) 会调用 oepn(2) 打开指定文件(获取文件描述符), fopen会分配一个 FILE 结构体, 其中包含该文件的描述符, IO缓冲区和当前读写位置等信息, 并返回FILE结构体的地址
@@ -98,7 +113,12 @@ int main() {
 }
 ```
 
+
 ## 其他
+
+
+
+### fputc putc
 
 fputc 和 putc 基本相同, 都是将一个字符输出到 stdout, 区别在于 putc 在 glibc 中是使用宏来实现的
 

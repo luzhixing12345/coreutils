@@ -22,6 +22,8 @@ def main():
         if not file_name.endswith('txt'):
             exe_names.append(file_name)
     
+    total_error = []
+    
     for exe_name in exe_names:
         
         test_file = os.path.join(test_dir,exe_name)
@@ -42,6 +44,7 @@ def main():
             if default_result.stdout.decode() != xbox_result.stdout.decode():
                 error_info = f'[Error]: [{shell_cmd}] in [{test_file}] line [{i}]'
                 print(error_info)
+                total_error.append(error_info)
                 with open(os.path.join(test_dir,f'{exe_name}_{i}_default.txt'),'w') as f:
                     f.write(f'{error_info}\n\n')
                     f.write(default_result.stdout.decode())
@@ -50,6 +53,12 @@ def main():
                     f.write(xbox_result.stdout.decode())
             else:
                 print(f'[Pass ]: [{shell_cmd}]')
+
+    for error_info in total_error:
+        print(error_info)
+        
+    if len(total_error) == 0:
+        print("\nfinish test\n")
 
 if __name__ == "__main__":
     main()
