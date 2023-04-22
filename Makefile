@@ -56,13 +56,16 @@ CP_FORMAT = "[cp]\t%-20s -> %s\n"
 MV_FORMAT = "[mv]\t%-20s -> %s\n"
 
 test:
-	$(MAKE) -C test
+	python test.py
+
+
 
 
 clean: $(DIRECTORY)
 	@for dir in $^ ; do \
 		$(MAKE) -C $$dir clean; \
 	done
+	rm testfiles/*.txt
 
 clean_all:
 	rm -r $(TARGET)

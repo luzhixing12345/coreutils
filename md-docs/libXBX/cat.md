@@ -22,3 +22,7 @@
 --help                   显示帮助信息并退出。
 --version                显示版本信息并退出。
 ```
+
+没有实现
+
+- -v, --show-nonprinting

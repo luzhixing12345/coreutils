@@ -1,2 +1,13 @@
 @ src/cat/cat.c
 @ Makefile -T
+@ Makefile -b
+@ Makefile -s
+@ Makefile -nE
+@ Makefile -bET
+@ Makefile -sET
+@ test.py -T
+@ test.py -b
+@ test.py -s
+@ test.py -nE
+@ test.py -bET
+@ test.py -sET

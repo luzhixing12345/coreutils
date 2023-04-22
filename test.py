@@ -1,26 +1,59 @@
 
 
+
+
 import os
+
+
+
+
 import subprocess
+
+
+
 
 def main():
     
     test_dir = 'testfiles'
     target_dir = 'src'
-    exe_names = os.listdir(test_dir)
+    file_names = os.listdir(test_dir)
+    exe_names = []
+    for file_name in file_names:
+        if not file_name.endswith('txt'):
+            exe_names.append(file_name)
     
     for exe_name in exe_names:
         
-        with open(os.path.join(test_dir,exe_name),'r',encoding='utf-8') as f:
+        test_file = os.path.join(test_dir,exe_name)
+        with open(test_file,'r',encoding='utf-8') as f:
             shell_cmds = f.read().split('\n')
         
         # 默认程序
-        for shell_cmd in shell_cmds:
-            with open('output.txt','w') as f:
-                subprocess.call('ls',stdout=f)
-
-
-
+        for i, shell_cmd in enumerate(shell_cmds):
+            if shell_cmd == '':
+                continue
+            cmd_list = shell_cmd.split(' ')
+            
+            cmd_list[0] = str(exe_name)
+            default_result = subprocess.run(cmd_list, stdout=subprocess.PIPE)
+            
+            cmd_list[0] = os.path.join(target_dir,exe_name,exe_name)
+            xbox_result = subprocess.run(cmd_list, stdout=subprocess.PIPE)
+            if default_result.stdout.decode() != xbox_result.stdout.decode():
+                error_info = f'[Error]: [{shell_cmd}] in [{test_file}] line [{i}]'
+                print(error_info)
+                with open(os.path.join(test_dir,f'{exe_name}_{i}_default.txt'),'w') as f:
+                    f.write(f'{error_info}\n\n')
+                    f.write(default_result.stdout.decode())
+                with open(os.path.join(test_dir,f'{exe_name}_{i}_xbox.txt'),'w') as f:
+                    f.write(f'{error_info}\n\n')
+                    f.write(xbox_result.stdout.decode())
+            else:
+                print(f'[Pass ]: [{shell_cmd}]')
 
 if __name__ == "__main__":
     main()
+
+
+
+

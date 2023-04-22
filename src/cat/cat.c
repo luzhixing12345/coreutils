@@ -15,9 +15,9 @@
 static int show_end = 0;
 static int show_number = 0;
 static int show_tab = 0;
-static int line_number = 1;
 static int nonblank = 0;
 static int squeeze = 0;
+static int line_number = 1;
 char **files = NULL;
 
 
@@ -42,29 +42,49 @@ void XBOX_cat(const char *file_name) {
     if (nonblank && c == '\n') {
         line_number--;
     } else if (show_number) {
-        printf("%6d",line_number);
+        printf("%6d\t",line_number);
     }
+
     char old_c;
+    int is_start = 1;
     while (c != EOF) {
 
-        // 一些cat的参数
-        if (show_tab && c == '\t') {
-            printf("^I");
-        }
         old_c = c;
         c = fgetc(fp);
+
+        // 一些cat的参数的实现
         if (squeeze && old_c == '\n' && c == '\n') {
+            // 如果是在开头
             char next_c = fgetc(fp);
-            if (next_c != '\n' && line_number) {
-                if (show_end) {
-                    printf("$");
-                }
-                printf("%c", old_c);
-            }
             fseek(fp, -1, SEEK_CUR);
+            
+            if (is_start) {
+                continue;
+            } else {   
+                if (next_c == EOF) {
+                    if (show_end) {
+                        printf("$\n$\n");
+                    } else {
+                        printf("\n\n");
+                    }
+                    break;
+                } else if (next_c != '\n') {
+                    if (show_end) {
+                        printf("$");
+                    }
+                    printf("\n");
+                }
+            }
         } else {
             if (show_end && old_c == '\n') {
                 printf("$");
+            }
+            if (show_tab && old_c == '\t') {
+                printf("^I");
+                continue;
+            }
+            if (c != '\n') {
+                is_start = 0;
             }
             printf("%c", old_c);
         }
@@ -79,12 +99,10 @@ void XBOX_cat(const char *file_name) {
             line_number++;
             printf("%6d\t",line_number);
         }
-        
     }
     fclose(fp);
     return;
 }
-
 
 
 int main(int argc, char const *argv[]) {
@@ -94,11 +112,11 @@ int main(int argc, char const *argv[]) {
         XBOX_ARG_STR_GROUPS(&files, [name = FILE][help = "source"]),
         XBOX_ARG_BOOLEAN(NULL, [-A][--show-all][help = "equivalent to -vET"]),
         XBOX_ARG_BOOLEAN(&nonblank, [-b][--number-nonblank][help = "number noempty output lines, overrides -n"]),
-        XBOX_ARG_BOOLEAN(NULL, [-e][name = e][help = "equivalent to -vE"]),
+        XBOX_ARG_BOOLEAN(&show_end, [-e][name = e][help = "equivalent to -vE"]),
         XBOX_ARG_BOOLEAN(&show_end, [-E][--show-ends][help = "display $ at end of each line"]),
         XBOX_ARG_BOOLEAN(&show_number, [-n][--number][help = "number all output lines"]),
         XBOX_ARG_BOOLEAN(&squeeze, [-s][--squeeze-blank][help = "suppress repeated empty output lines"]),
-        XBOX_ARG_BOOLEAN(NULL, [-t][name = t][help = "equivalent to -vT"]),
+        XBOX_ARG_BOOLEAN(&show_tab, [-t][name = t][help = "equivalent to -vT"]),
         XBOX_ARG_BOOLEAN(&show_tab, [-T][name = bigt][help = "display TAB character as ^I"]),
         XBOX_ARG_BOOLEAN(NULL, [-u][name = u][help = (ignored)]),
         XBOX_ARG_BOOLEAN(NULL, [-v][--show-nonprinting][help = "use ^ and M- notation, except for LFD and TAB"]),
@@ -126,6 +144,16 @@ int main(int argc, char const *argv[]) {
         XBOX_free_argparse(&parser);
         return 0;
     }
+
+    if (XBOX_ismatch(&parser, "show-all")) {
+        show_end = 1;
+        show_tab = 1;
+    }
+
+    if (nonblank) {
+        show_number = 0;
+    }
+
     int n = XBOX_ismatch(&parser, "FILE");
     if (n) {
         // printf("%d\n",n);
