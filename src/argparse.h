@@ -80,6 +80,13 @@ typedef struct {
 #define XBOX_ARG_END(...) \
     { ARGPARSE_OPT_END, #__VA_ARGS__ }
 
+/**
+ * @brief 初始化 argparser
+ * 
+ * @param parser 
+ * @param options 
+ * @param flag 
+ */
 void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int flag) {
     memset(parser, 0, sizeof(*parser));
     parser->name = NULL;
@@ -100,6 +107,7 @@ void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int fla
         parser->options[i].value = NULL;
         parser->options[i].must = 0;
         parser->options[i].match = 0;
+        // printf("pointer %d: %p\n",i,parser->options[i].p);
     }
     return;
 }
@@ -332,7 +340,7 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         printf("\n");
     }
     if (parser->epilog) {
-        printf("%s\n", parser->epilog);
+        printf("\n%s\n", parser->epilog);
     }
 }
 
@@ -460,8 +468,14 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         int match_number = ++option->match;
         if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP ||
             option->type == ARGPARSE_OPT_STR_GROUPS) {
-            char **new_p = (char **)realloc(*(char ***)option->p, sizeof(char *) * match_number);
-            if (*(char ***)option->p && new_p != (*(char ***)option->p)) {
+
+            char **new_p;
+            if (match_number == 1) {
+                new_p = (char **)realloc(NULL, sizeof(char *) * match_number);
+            } else {
+                new_p = (char **)realloc(*(char ***)option->p, sizeof(char *) * match_number);
+            }
+            if (*(char ***)option->p && new_p != (*(char ***)option->p) && match_number != 1) {
                 for (int i = 0; i < match_number - 1; i++) {
                     new_p[i] = (*(char ***)option->p)[i];
                 }
@@ -484,8 +498,13 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
                 value = value * 10 + (*temp) - '0';
                 temp++;
             }
-            int *new_p = (int *)realloc(*(int **)option->p, sizeof(int) * match_number);
-            if (*(char ***)option->p && new_p != (*(int **)option->p)) {
+            int *new_p;
+            if (match_number == 1) {
+                new_p = (int *)realloc(NULL, sizeof(int) * match_number);
+            } else {
+                new_p = (int *)realloc(*(int **)option->p, sizeof(int) * match_number);
+            }
+            if (*(char ***)option->p && new_p != (*(int **)option->p) && match_number != 1) {
                 for (int i = 0; i < match_number - 1; i++) {
                     new_p[i] = (*(int **)option->p)[i];
                 }
@@ -636,11 +655,21 @@ int check_valid_character(const char *str) {
     return 0;
 }
 
+/**
+ * @brief 检验参数合法性
+ * 
+ * @param parser 
+ */
 void check_valid_options(XBOX_argparse *parser) {
+
     // group 不重名
+    int has_multi_args = 0; // 有若干值的参数
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
+        if (option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
+            has_multi_args = 1;
+        }
         if (option->long_name) {
             char *l_name = XBOX_splice(option->long_name, 2, -1);
             char *p = l_name;
@@ -674,6 +703,7 @@ void check_valid_options(XBOX_argparse *parser) {
         }
     }
 
+
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option1 = &(parser->options[i]);
         for (int j = i + 1; j < parser->args_number; j++) {
@@ -705,6 +735,13 @@ void check_valid_options(XBOX_argparse *parser) {
         fprintf(stderr,
                 "Error: flag collasp for XBOX_ARGPARSE_ENABLE_EQUAL with XBOX_ARGPARSE_ENABLE_EQUAL or "
                 "XBOX_ARGPARSE_ENABLE_STICK\n");
+        XBOX_free_argparse(parser);
+        exit(XBOX_FORMAT_ERROR);
+    }
+
+    if (has_multi_args && !(parser->flag & XBOX_ARGPARSE_ENABLE_MULTI)) {
+        fprintf(stderr,
+                "Error: You should use XBOX_ARGPARSE_ENABLE_MULTI flag to support argument that has more than one value\n");
         XBOX_free_argparse(parser);
         exit(XBOX_FORMAT_ERROR);
     }

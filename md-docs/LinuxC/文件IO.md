@@ -33,6 +33,31 @@ off_t lseek(int fd, off_t offset, int whence);
 
 偏移 fd, whence 三个值  `SEEK_SET` `SEEK_CUR` `SEEK_END`, offset 正负代表后移和前移, 返回到文件头的偏移量
 
+
+```c
+#include <sys/mman.h>
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+int munmap(void *addr, size_t length);
+```
+
+addr 传 NULL, length 为映射大小, fd 文件描述符, offset 偏移量传0
+
+prot 不能与 fd 冲突
+
+- `PROT_EXEC`  Pages may be executed.
+- `PROT_READ`  Pages may be read.
+- `PROT_WRITE` Pages may be written.
+- `PROT_NONE`  Pages may not be accessed.
+
+flag:
+
+- MAP_SHARED: 多个进程对相同文件映射共享
+- MAP_PRIVATE: 多个进程对相同文件映射不共享
+- MAP_SHARED_VALIDATE
+
+> MAP_SHARED_VALIDATE的行为与MAP_SHARED提供的相同，但MAP_SHARED映射会忽略标志中的未知标志。相比之下，使用MAP_SHARED_VALIDATE创建映射时，内核会验证所有传递的标志是否已知，并对未知标志使用错误EOPNOTSUPP失败映射
+
+
 ## C 标准库
 
 ```c
@@ -112,6 +137,8 @@ int main() {
     return 0;
 }
 ```
+
+
 
 
 ## 其他

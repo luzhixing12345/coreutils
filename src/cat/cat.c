@@ -129,7 +129,7 @@ int main(int argc, char const *argv[]) {
                            "cat",
                            "Concateate FILE(s) to standard output.\n\nWith no FILE, or when FILE is -, read standard "
                            "input.",
-                           "\nExamples:\n  cat f - g Output f's contents, then standard input, then g's contents.\n  "
+                           "Examples:\n  cat f - g Output f's contents, then standard input, then g's contents.\n  "
                            "cat       Copy standard input to standard output.\n\nXBOX coreutils online help: "
                            "<https://github.com/luzhixing12345/xbox>");
     XBOX_argparse_parse(&parser, argc, argv);

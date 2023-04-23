@@ -2,7 +2,7 @@
 
 
 
-import os
+import os, copy
 
 
 
@@ -22,7 +22,7 @@ def main():
         if not file_name.endswith('txt'):
             exe_names.append(file_name)
     
-    total_error = []
+    total_info = []
     
     for exe_name in exe_names:
         
@@ -37,28 +37,48 @@ def main():
             cmd_list = shell_cmd.split(' ')
             
             cmd_list[0] = str(exe_name)
+            complete_shell_cmd = shell_cmd.replace('@',exe_name)
             default_result = subprocess.run(cmd_list, stdout=subprocess.PIPE)
+            
+            busybox_cmd_list = copy.deepcopy(cmd_list)
+            busybox_cmd_list[0] = "/home/kamilu/busybox-1.36.0/busybox"
+            busybox_cmd_list.insert(1,exe_name)
+            busybox_result = subprocess.run(busybox_cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             cmd_list[0] = os.path.join(target_dir,exe_name,exe_name)
             xbox_result = subprocess.run(cmd_list, stdout=subprocess.PIPE)
             if default_result.stdout.decode() != xbox_result.stdout.decode():
-                error_info = f'[Error]: [{shell_cmd}] in [{test_file}] line [{i}]'
+                if busybox_result.stdout.decode() == xbox_result.stdout.decode():
+                    warning_info = f'[Warning]: GNU result is different from (busybox and xbox) in [{complete_shell_cmd}] in [{test_file}] line [{i}]'
+                    print(warning_info)
+                    total_info.append(warning_info)
+                    continue
+                error_info = f'[Error]: [{complete_shell_cmd}] in [{test_file}] line [{i}]'
                 print(error_info)
-                total_error.append(error_info)
+                total_info.append(error_info)
                 with open(os.path.join(test_dir,f'{exe_name}_{i}_default.txt'),'w') as f:
                     f.write(f'{error_info}\n\n')
                     f.write(default_result.stdout.decode())
+                with open(os.path.join(test_dir,f'{exe_name}_{i}_busy_box.txt'),'w') as f:
+                    f.write(f'{error_info}\n\n')
+                    f.write(busybox_result.stdout.decode())
                 with open(os.path.join(test_dir,f'{exe_name}_{i}_xbox.txt'),'w') as f:
                     f.write(f'{error_info}\n\n')
                     f.write(xbox_result.stdout.decode())
             else:
-                print(f'[Pass ]: [{shell_cmd}]')
+                print(f'[Pass ]: [{complete_shell_cmd}]')
 
-    for error_info in total_error:
-        print(error_info)
         
-    if len(total_error) == 0:
+    if len(total_info) == 0:
         print("\nfinish test\n")
+
+    else:
+        print("\n\n")
+        print('-'*10)
+        print("Total Info:\n")
+        for error_info in total_info:
+            print(error_info)
+        print('-'*10)
 
 if __name__ == "__main__":
     main()
