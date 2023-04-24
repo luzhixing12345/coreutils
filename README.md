@@ -63,19 +63,17 @@ main: main.c
 
 关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/xbox)
 
+[busybox源码构建]()
+
 ## 参考
 
 - [busybox](https://busybox.net/)
 - [glibc](https://github.com/bminor/glibc)
+- [gnu-coreutils](https://www.maizure.org/projects/decoded-gnu-coreutils/)
 - [Boost](https://www.boost.org/)
 - [filesystem](https://en.cppreference.com/w/cpp/filesystem)
 - [Poco](https://github.com/pocoproject/poco)
 - [Asio](https://think-async.com/Asio/)
-- [Cairo](https://www.cairographics.org/)
-- [QT Graphics View Framework](https://doc.qt.io/qt-6/graphicsview.html)
-- [AGG](https://github.com/ghaerr/agg-2.6)
-- [skia](https://skia.org/)
-- [ImageMagick](https://imagemagick.org/script/magick++.php)
 - [libuv](https://github.com/libuv/libuv)
 - [Simple-web-server](https://github.com/eidheim/Simple-Web-Server)
 - [Crow](https://crowcpp.org/master/)
