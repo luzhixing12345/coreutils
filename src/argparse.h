@@ -539,7 +539,7 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                     option = check_argparse_soptions(parser, argv[i]);
                 }
                 if (option == NULL) {
-                    if (parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK && argv[i][1] != '-') {
+                    if ((parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK) && argv[i][1] != '-') {
                         char s[3] = {'-', '0', '\0'};
                         int n = strlen(argv[i]);
                         for (int j = 1; j < n; j++) {
@@ -761,6 +761,17 @@ void check_valid_options(XBOX_argparse *parser) {
  * @return int 如果未匹配返回0; 如果匹配,返回值为匹配的个数
  */
 int XBOX_ismatch(XBOX_argparse *parser, char *name) {
+
+    if (strlen(name) > 2) {
+        if (name[0] == '-' && name[1] == '-') {
+            if (!(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+                char *new_name = XBOX_splice(name, 2, -1);
+                fprintf(stderr, "[Warning]: detected [%s] in XBOX_ismatch, do you mean [%s]?\n",name, new_name);
+                free(new_name);
+            }
+        }
+    }
+
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (!strcmp(option->name, name)) {
