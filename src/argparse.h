@@ -114,7 +114,13 @@ void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int fla
 
 void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char *description, const char *epilog) {
     parser->name = name;
+    if (strlen(description) == 0) {
+        description = "About how to use the program";
+    }
     parser->description = description;
+    if (strlen(epilog) == 0) {
+        epilog = "XBOX coreutils online help: <https://github.com/luzhixing12345/xbox>";
+    }
     parser->epilog = epilog;
     return;
 }

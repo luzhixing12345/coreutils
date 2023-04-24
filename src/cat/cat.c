@@ -27,6 +27,14 @@ char **files = NULL;
  * @param file_name 
  */
 void XBOX_cat(const char *file_name) {
+
+    struct stat st;
+    stat(file_name, &st);
+    if (S_ISDIR(st.st_mode)) {
+        printf("cat: %s: Is a directory\n",file_name);
+        return;
+    }
+    
     FILE *fp = fopen(file_name, "r");
     if (!fp) {
         char error_info[256 + 5];
