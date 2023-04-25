@@ -75,7 +75,7 @@ void XBOX_trim(char **str_p) {
  * @param str 
  * @param start 起点index(包含)
  * @param end 终点index(包含), end = -1 表示结尾
- * @return char* 
+ * @return char*(动态分配,需要释放)
  */
 char* XBOX_splice(const char *str, int start, int end) {
     

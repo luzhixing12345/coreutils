@@ -17,8 +17,10 @@
 char **dirs;
 static int dereference = 0;
 static int file_system = 0;
-char *cached;
 static int terse = 0;
+
+// [?]: 没有 Birth, 和 stat 不同, 和 busybox 相同
+
 
 typedef struct FS_TYPE {
     unsigned long long x;
@@ -196,9 +198,9 @@ char *XBOX_stat_access_mode(mode_t mode) {
 }
 
 void XBOX_stat(const char *name) {
-    struct stat st;      // stat结构体
-    struct passwd *pwd;  // passwd结构体
-    struct group *grp;   // group结构体
+    struct stat st;
+    struct passwd *pwd;
+    struct group *grp;
 
     int (*stat_method)(const char *, struct stat *) = (dereference) ? stat : lstat;
     if (stat_method(name, &st) < 0) {
@@ -338,7 +340,6 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&dereference, [-L][--dereference][help = "follow links"]),
         XBOX_ARG_BOOLEAN(&file_system,
                          [-f][--file-system][help = "display file system status instead of file status"]),
-        XBOX_ARG_STR(&cached, [--cached][help = "specify how to use cached attributes"]),
         XBOX_ARG_BOOLEAN(&terse, [-t][--terse][help = "print the information in terse form"]),
         XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
         XBOX_ARG_END()};

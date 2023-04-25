@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #include "define.h"
 #include "string.h"
 
@@ -568,7 +569,6 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         }
                         continue;
                     }
-
                     if (parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) {
                         int pos = XBOX_findChar(argv[i], '=');
                         if (pos != -1 && pos == 2) {
@@ -588,6 +588,11 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         option = check_argparse_soptions(parser, short_name);
                         free(short_name);
                         if (option) {
+                            if(option->type == ARGPARSE_OPT_BOOLEAN && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+                                fprintf(stderr, "Error: Detected boolean argument sticky [%s], do you mean XBOX_ARGPARSE_ENABLE_ARG_STICK instead of XBOX_ARGPARSE_ENABLE_STICK?\n", argv[i]);
+                                XBOX_free_argparse(parser);
+                                exit(XBOX_FORMAT_ERROR);
+                            }
                             char *value = XBOX_splice(argv[i], 2, -1);
                             option->value = value;
                             value_pass(parser, option);

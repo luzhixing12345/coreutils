@@ -1,35 +1,77 @@
 
 
+#include <errno.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "../argparse.h"
 
-static int logical = 1; // default
+static int logical = 1;  // default
 static int physical = 0;
 
+// [?]: 如果在一个软链接中修改PWD的话和pwd结果不同, 和 busybox 相同
+
+
+#define SAME_INODE(st1, st2) ((st1.st_ino == st2.st_ino) && (st1.st_dev == st2.st_dev))
+
+static char *logical_getcwd(void) {
+    struct stat st1;
+    struct stat st2;
+    char *wd = getenv("PWD");
+    char *p;
+
+    /* Textual validation first.  */
+    if (!wd || wd[0] != '/')
+        return NULL;
+    p = wd;
+    while ((p = strstr(p, "/."))) {
+        if (!p[2] || p[2] == '/' || (p[2] == '.' && (!p[3] || p[3] == '/')))
+            return NULL;
+        p++;
+    }
+    /* System call validation.  */
+    if (stat(wd, &st1) == 0 && stat(".", &st2) == 0 && SAME_INODE(st1, st2))
+        return wd;
+    return NULL;
+}
+
+char *xgetcwd(void) {
+    char *cwd = getcwd(NULL, 0);
+    if (!cwd && errno == ENOMEM) {
+        perror("getcwd");
+        exit(0);
+    }
+    return cwd;
+}
+
 void XBOX_pwd() {
+    char *pwd;
     if (logical & !physical) {
-        char *pwd = getenv("PWD");
-        if (pwd == NULL) {
-            printf("PWD environment variable is not set\n");
-        } else {
-            printf("%s\n", pwd);
+        pwd = logical_getcwd();
+        if (pwd) {
+            printf("%s\n",pwd);
+            return;
         }
+    }
+    
+    pwd = xgetcwd();
+    if (pwd) {
+        printf("%s\n",pwd);
+        free(pwd);
         return;
     }
-
-    char buf[PATH_MAX];
-    char *cwd = getcwd(buf, PATH_MAX);
-    if (cwd == NULL) {
-        perror("getcwd");
-        exit(1);
-    }
-    printf("%s\n", buf);
-    return;
+    // https://github.com/MaiZure/coreutils-8.3/blob/master/src/pwd.c
+    // else {
+    //     struct file_name *file_name = file_name_init();
+    //     robust_getcwd(file_name);
+    //     puts(file_name->start);
+    //     file_name_free(file_name);
+    // }
 }
 
 int main(int argc, const char **argv) {
