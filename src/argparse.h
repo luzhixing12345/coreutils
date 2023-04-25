@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include "define.h"
 #include "string.h"
 
@@ -83,10 +82,10 @@ typedef struct {
 
 /**
  * @brief 初始化 argparser
- * 
- * @param parser 
- * @param options 
- * @param flag 
+ *
+ * @param parser
+ * @param options
+ * @param flag
  */
 void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int flag) {
     memset(parser, 0, sizeof(*parser));
@@ -475,18 +474,11 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         int match_number = ++option->match;
         if (option->type == ARGPARSE_OPT_STRING || option->type == ARGPARSE_OPT_STR_GROUP ||
             option->type == ARGPARSE_OPT_STR_GROUPS) {
-
             char **new_p;
             if (match_number == 1) {
                 new_p = (char **)realloc(NULL, sizeof(char *) * match_number);
             } else {
                 new_p = (char **)realloc(*(char ***)option->p, sizeof(char *) * match_number);
-            }
-            if (*(char ***)option->p && new_p != (*(char ***)option->p) && match_number != 1) {
-                for (int i = 0; i < match_number - 1; i++) {
-                    new_p[i] = (*(char ***)option->p)[i];
-                }
-                free(*(char ***)option->p);
             }
             *(char ***)option->p = new_p;
             char *value_str = XBOX_splice(option->value, 0, -1);
@@ -510,12 +502,6 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
                 new_p = (int *)realloc(NULL, sizeof(int) * match_number);
             } else {
                 new_p = (int *)realloc(*(int **)option->p, sizeof(int) * match_number);
-            }
-            if (*(char ***)option->p && new_p != (*(int **)option->p) && match_number != 1) {
-                for (int i = 0; i < match_number - 1; i++) {
-                    new_p[i] = (*(int **)option->p)[i];
-                }
-                free(*(int **)option->p);
             }
             (*(int **)option->p) = new_p;
             (*(int **)option->p)[match_number - 1] = value;
@@ -588,8 +574,13 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         option = check_argparse_soptions(parser, short_name);
                         free(short_name);
                         if (option) {
-                            if(option->type == ARGPARSE_OPT_BOOLEAN && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-                                fprintf(stderr, "Error: Detected boolean argument sticky [%s], do you mean XBOX_ARGPARSE_ENABLE_ARG_STICK instead of XBOX_ARGPARSE_ENABLE_STICK?\n", argv[i]);
+                            if (option->type == ARGPARSE_OPT_BOOLEAN &&
+                                !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+                                fprintf(stderr,
+                                        "Error: Boolean argument [%s] is sticky in [%s], do you mean "
+                                        "XBOX_ARGPARSE_ENABLE_ARG_STICK?\n",
+                                        option->short_name,
+                                        argv[i]);
                                 XBOX_free_argparse(parser);
                                 exit(XBOX_FORMAT_ERROR);
                             }
@@ -668,13 +659,12 @@ int check_valid_character(const char *str) {
 
 /**
  * @brief 检验参数合法性
- * 
- * @param parser 
+ *
+ * @param parser
  */
 void check_valid_options(XBOX_argparse *parser) {
-
     // group 不重名
-    int has_multi_args = 0; // 有若干值的参数
+    int has_multi_args = 0;  // 有若干值的参数
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -714,7 +704,6 @@ void check_valid_options(XBOX_argparse *parser) {
         }
     }
 
-
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option1 = &(parser->options[i]);
         for (int j = i + 1; j < parser->args_number; j++) {
@@ -751,8 +740,9 @@ void check_valid_options(XBOX_argparse *parser) {
     }
 
     if (has_multi_args && !(parser->flag & XBOX_ARGPARSE_ENABLE_MULTI)) {
-        fprintf(stderr,
-                "Error: You should use XBOX_ARGPARSE_ENABLE_MULTI flag to support argument that has more than one value\n");
+        fprintf(
+            stderr,
+            "Error: You should use XBOX_ARGPARSE_ENABLE_MULTI flag to support argument that has more than one value\n");
         XBOX_free_argparse(parser);
         exit(XBOX_FORMAT_ERROR);
     }
@@ -766,12 +756,11 @@ void check_valid_options(XBOX_argparse *parser) {
  * @return int 如果未匹配返回0; 如果匹配,返回值为匹配的个数
  */
 int XBOX_ismatch(XBOX_argparse *parser, char *name) {
-
     if (strlen(name) > 2) {
         if (name[0] == '-' && name[1] == '-') {
             if (!(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
                 char *new_name = XBOX_splice(name, 2, -1);
-                fprintf(stderr, "[Warning]: detected [%s] in XBOX_ismatch, do you mean [%s]?\n",name, new_name);
+                fprintf(stderr, "[Warning]: detected [%s] in XBOX_ismatch, do you mean [%s]?\n", name, new_name);
                 free(new_name);
             }
         }
