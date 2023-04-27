@@ -14,28 +14,18 @@ RELEASE = $(TARGET)
 LIB = lib$(TARGET).a
 # ------------------------- #
 
-# 递归的搜索所有SRC_PATH目录下的.SRC_TXT类型的文件
-rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
-						$(filter $2, $d))
-
-SRC = $(call rwildcard, $(SRC_PATH), %.$(SRC_EXT))
+SRC := $(wildcard $(SRC_PATH)/*.c)
 OBJ = $(SRC:$(SRC_EXT)=o)
-HEADER = $(SRC:$(SRC_EXT)=h)
+HEADER = $(wildcard $(SRC_PATH)/*.h)
 EXE = $(OBJ:%.o=%)
-UTILS_HEADER = $(wildcard $(SRC_PATH)/*.h)
 
-DIRECTORY = $(filter-out $(UTILS_HEADER),$(wildcard $(SRC_PATH)/*))
+all: $(EXE)
 
-all: $(DIRECTORY)
-	@for dir in $^ ; do \
-		$(MAKE) -C $$dir ; \
-	done
-	
-%.o: %.c %.h $(UTILS_HEADER)
+$(EXE): %: %.o
+	$(CC) $(CFLAGS) $< -o $@
+
+$(OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
-
-%: %.o
-	$(CC) $(CFLAGS) -o $@ $<
 
 # ------------------------- #
 #          使用方法
@@ -58,14 +48,8 @@ MV_FORMAT = "[mv]\t%-20s -> %s\n"
 test:
 	python test.py
 
-
-
-
-clean: $(DIRECTORY)
-	@for dir in $^ ; do \
-		$(MAKE) -C $$dir clean; \
-	done
-	rm testfiles/*.txt
+clean:
+	rm -f $(EXE)
 
 clean_all:
 	rm -r $(TARGET)
@@ -81,7 +65,6 @@ release:
 	mkdir -p $(RELEASE)/lib
 	@cp -v $(EXE) $(RELEASE)/bin | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
 	@cp -v $(HEADER) $(RELEASE)/include/$(RELEASE) | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
-	@cp -v $(UTILS_HEADER) $(RELEASE)/include/$(RELEASE) | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
 	@mv -v $(LIB) $(RELEASE)/lib | awk -v format=$(MV_FORMAT) '{printf format, $$2, $$4}'
 
 tar:

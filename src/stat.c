@@ -12,7 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../argparse.h"
+#include "argparse.h"
 
 char **dirs;
 static int dereference = 0;

@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../argparse.h"
+#include "argparse.h"
 
 static int logical = 1;  // default
 static int physical = 0;

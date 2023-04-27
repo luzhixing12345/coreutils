@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../argparse.h"
+#include "argparse.h"
 
 // 全局变量
 static int show_end = 0;

@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../argparse.h"
+#include "argparse.h"
 
 char **dirs;
 
