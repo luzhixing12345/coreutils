@@ -49,7 +49,7 @@ test:
 	python test.py
 
 clean:
-	rm -f $(EXE)
+	rm -f $(EXE) $(OBJ)
 
 clean_all:
 	rm -r $(TARGET)

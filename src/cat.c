@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "argparse.h"
+#include "xutils.h"
 
 // 全局变量
 static int show_end = 0;
@@ -20,21 +20,19 @@ static int squeeze = 0;
 static int line_number = 1;
 char **files = NULL;
 
-
 /**
  * @brief 显示文件内容
- * 
- * @param file_name 
+ *
+ * @param file_name
  */
 void XBOX_cat(const char *file_name) {
-
     struct stat st;
     stat(file_name, &st);
     if (S_ISDIR(st.st_mode)) {
-        printf("cat: %s: Is a directory\n",file_name);
+        printf("cat: %s: Is a directory\n", file_name);
         return;
     }
-    
+
     FILE *fp = fopen(file_name, "r");
     if (!fp) {
         char error_info[256 + 5];
@@ -50,13 +48,12 @@ void XBOX_cat(const char *file_name) {
     if (nonblank && c == '\n') {
         line_number--;
     } else if (show_number) {
-        printf("%6d\t",line_number);
+        printf("%6d\t", line_number);
     }
 
     char old_c;
     int is_start = 1;
     while (c != EOF) {
-
         old_c = c;
         c = fgetc(fp);
 
@@ -65,10 +62,10 @@ void XBOX_cat(const char *file_name) {
             // 如果是在开头
             char next_c = fgetc(fp);
             fseek(fp, -1, SEEK_CUR);
-            
+
             if (is_start) {
                 continue;
-            } else {   
+            } else {
                 if (next_c == EOF) {
                     if (show_end) {
                         printf("$\n$\n");
@@ -99,40 +96,38 @@ void XBOX_cat(const char *file_name) {
         if (nonblank && old_c == '\n' && c != EOF) {
             if (c != old_c) {
                 line_number++;
-                printf("%6d\t",line_number);
+                printf("%6d\t", line_number);
             }
             continue;
         }
         if (show_number && old_c == '\n' && c != EOF) {
             line_number++;
-            printf("%6d\t",line_number);
+            printf("%6d\t", line_number);
         }
     }
     fclose(fp);
     return;
 }
 
-
 int main(int argc, char const *argv[]) {
-    
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
         XBOX_ARG_STR_GROUPS(&files, [name = FILE][help = "source"]),
-        XBOX_ARG_BOOLEAN(NULL, [-A][--show-all][help = "equivalent to -vET"]),
-        XBOX_ARG_BOOLEAN(&nonblank, [-b][--number-nonblank][help = "number noempty output lines, overrides -n"]),
+        XBOX_ARG_BOOLEAN(NULL, [-A][--show - all][help = "equivalent to -vET"]),
+        XBOX_ARG_BOOLEAN(&nonblank, [-b][--number - nonblank][help = "number noempty output lines, overrides -n"]),
         XBOX_ARG_BOOLEAN(&show_end, [-e][name = e][help = "equivalent to -vE"]),
-        XBOX_ARG_BOOLEAN(&show_end, [-E][--show-ends][help = "display $ at end of each line"]),
+        XBOX_ARG_BOOLEAN(&show_end, [-E][--show - ends][help = "display $ at end of each line"]),
         XBOX_ARG_BOOLEAN(&show_number, [-n][--number][help = "number all output lines"]),
-        XBOX_ARG_BOOLEAN(&squeeze, [-s][--squeeze-blank][help = "suppress repeated empty output lines"]),
+        XBOX_ARG_BOOLEAN(&squeeze, [-s][--squeeze - blank][help = "suppress repeated empty output lines"]),
         XBOX_ARG_BOOLEAN(&show_tab, [-t][name = t][help = "equivalent to -vT"]),
         XBOX_ARG_BOOLEAN(&show_tab, [-T][name = bigt][help = "display TAB character as ^I"]),
         XBOX_ARG_BOOLEAN(NULL, [-u][name = u][help = (ignored)]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--show-nonprinting][help = "use ^ and M- notation, except for LFD and TAB"]),
+        XBOX_ARG_BOOLEAN(NULL, [-v][--show - nonprinting][help = "use ^ and M- notation, except for LFD and TAB"]),
         XBOX_ARG_BOOLEAN(NULL, [--version][help = "output version information and exit"]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK|XBOX_ARGPARSE_ENABLE_MULTI);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK | XBOX_ARGPARSE_ENABLE_MULTI);
     XBOX_argparse_describe(&parser,
                            "cat",
                            "Concateate FILE(s) to standard output.\n\nWith no FILE, or when FILE is -, read standard "
@@ -165,7 +160,7 @@ int main(int argc, char const *argv[]) {
     int n = XBOX_ismatch(&parser, "FILE");
     if (n) {
         // printf("%d\n",n);
-        for (int i=0;i<n;i++) {
+        for (int i = 0; i < n; i++) {
             XBOX_cat(files[i]);
             free(files[i]);
         }

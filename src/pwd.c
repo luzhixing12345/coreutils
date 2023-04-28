@@ -9,13 +9,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "argparse.h"
+#include "xutils.h"
 
 static int logical = 1;  // default
 static int physical = 0;
 
 // [?]: 如果在一个软链接中修改PWD的话和pwd结果不同, 和 busybox 相同
-
 
 #define SAME_INODE(st1, st2) ((st1.st_ino == st2.st_ino) && (st1.st_dev == st2.st_dev))
 
@@ -54,14 +53,14 @@ void XBOX_pwd() {
     if (logical & !physical) {
         pwd = logical_getcwd();
         if (pwd) {
-            printf("%s\n",pwd);
+            printf("%s\n", pwd);
             return;
         }
     }
-    
+
     pwd = xgetcwd();
     if (pwd) {
-        printf("%s\n",pwd);
+        printf("%s\n", pwd);
         free(pwd);
         return;
     }

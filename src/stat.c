@@ -12,7 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "argparse.h"
+#include "xutils.h"
 
 char **dirs;
 static int dereference = 0;
@@ -21,54 +21,52 @@ static int terse = 0;
 
 // [?]: 没有 Birth, 和 stat 不同, 和 busybox 相同
 
-
 typedef struct FS_TYPE {
     unsigned long long x;
     char *name;
 } FS_TYPE;
 
 static const FS_TYPE FS_TYPE_LIST[] = {{0xADFF, "affs"},
-                                {0x1CD1, "devpts"},
-                                {0x137D, "ext"},
-                                {0xEF51, "ext2"},
-                                {0xEF53, "ext2/ext3"},
-                                {0x3153464a, "jfs"},
-                                {0x58465342, "xfs"},
-                                {0xF995E849, "hpfs"},
-                                {0x9660, "isofs"},
-                                {0x4000, "isofs"},
-                                {0x4004, "isofs"},
-                                {0x137F, "minix"},
-                                {0x138F, "minix (30 char.)"},
-                                {0x2468, "minix v2"},
-                                {0x2478, "minix v2 (30 char.)"},
-                                {0x4d44, "msdos"},
-                                {0x4006, "fat"},
-                                {0x564c, "novell"},
-                                {0x6969, "nfs"},
-                                {0x9fa0, "proc"},
-                                {0x517B, "smb"},
-                                {0x012FF7B4, "xenix"},
-                                {0x012FF7B5, "sysv4"},
-                                {0x012FF7B6, "sysv2"},
-                                {0x012FF7B7, "coh"},
-                                {0x00011954, "ufs"},
-                                {0x012FD16D, "xia"},
-                                {0x5346544e, "ntfs"},
-                                {0x1021994, "tmpfs"},
-                                {0x52654973, "reiserfs"},
-                                {0x28cd3d45, "cramfs"},
-                                {0x7275, "romfs"},
-                                {0x858458f6, "ramfs"},
-                                {0x73717368, "squashfs"},
-                                {0x62656572, "sysfs"}
-                                };
+                                       {0x1CD1, "devpts"},
+                                       {0x137D, "ext"},
+                                       {0xEF51, "ext2"},
+                                       {0xEF53, "ext2/ext3"},
+                                       {0x3153464a, "jfs"},
+                                       {0x58465342, "xfs"},
+                                       {0xF995E849, "hpfs"},
+                                       {0x9660, "isofs"},
+                                       {0x4000, "isofs"},
+                                       {0x4004, "isofs"},
+                                       {0x137F, "minix"},
+                                       {0x138F, "minix (30 char.)"},
+                                       {0x2468, "minix v2"},
+                                       {0x2478, "minix v2 (30 char.)"},
+                                       {0x4d44, "msdos"},
+                                       {0x4006, "fat"},
+                                       {0x564c, "novell"},
+                                       {0x6969, "nfs"},
+                                       {0x9fa0, "proc"},
+                                       {0x517B, "smb"},
+                                       {0x012FF7B4, "xenix"},
+                                       {0x012FF7B5, "sysv4"},
+                                       {0x012FF7B6, "sysv2"},
+                                       {0x012FF7B7, "coh"},
+                                       {0x00011954, "ufs"},
+                                       {0x012FD16D, "xia"},
+                                       {0x5346544e, "ntfs"},
+                                       {0x1021994, "tmpfs"},
+                                       {0x52654973, "reiserfs"},
+                                       {0x28cd3d45, "cramfs"},
+                                       {0x7275, "romfs"},
+                                       {0x858458f6, "ramfs"},
+                                       {0x73717368, "squashfs"},
+                                       {0x62656572, "sysfs"}};
 
 char *get_fs_type_name(int f_type) {
-
-    int length = sizeof(FS_TYPE_LIST)/sizeof(FS_TYPE);
-    for(int i=0;i<length;i++) {
-        if (f_type == FS_TYPE_LIST[i].x) return FS_TYPE_LIST[i].name;
+    int length = sizeof(FS_TYPE_LIST) / sizeof(FS_TYPE);
+    for (int i = 0; i < length; i++) {
+        if (f_type == FS_TYPE_LIST[i].x)
+            return FS_TYPE_LIST[i].name;
     }
     return "unknown";
 }
