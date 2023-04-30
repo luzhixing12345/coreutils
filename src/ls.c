@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "xutils.h"
+#include "xargparse.h"
 
 char **dirs;
 

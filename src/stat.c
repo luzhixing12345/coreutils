@@ -12,7 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "xutils.h"
+#include "xargparse.h"
 
 char **dirs;
 static int dereference = 0;
@@ -337,7 +337,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_STR_GROUPS(&dirs, [name = FILE]),
         XBOX_ARG_BOOLEAN(&dereference, [-L][--dereference][help = "follow links"]),
         XBOX_ARG_BOOLEAN(&file_system,
-                         [-f][--file-system][help = "display file system status instead of file status"]),
+                         [-f][--file - system][help = "display file system status instead of file status"]),
         XBOX_ARG_BOOLEAN(&terse, [-t][--terse][help = "print the information in terse form"]),
         XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
         XBOX_ARG_END()};
