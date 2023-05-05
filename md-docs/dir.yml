@@ -13,3 +13,4 @@ LinuxC:
 - ioctl: 4
 - vfs: 5
 - process: 6
+- pipe: 7

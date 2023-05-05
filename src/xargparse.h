@@ -1,6 +1,6 @@
 /*
  *Copyright (c) 2023 All rights reserved
- *@description: xbox 基础C工具库, header only
+ *@description: argument parser
  *@author: Zhixing Lu
  *@date: 2023-04-28
  *@email: luzhixing12345@163.com
