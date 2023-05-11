@@ -57,12 +57,11 @@ xbox/
 a
 a.c
 
-src/ls
-src/cat
-src/stat
-src/pwd
 notes/
 docs/
 
 test/file
 testfiles/*.txt
+
+ignore.py
+test.py

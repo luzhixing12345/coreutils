@@ -641,7 +641,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
     }
 }
 
-void argparse_parse_argv(XBOX_argparse *parser, int argc, char **argv) {
+void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
     for (int i = 1; i < argc; i++) {
         int argv_length = strlen(argv[i]);
         if (argv_length >= 2 && argv[i][0] == '-') {
@@ -918,7 +918,7 @@ int XBOX_ismatch(XBOX_argparse *parser, char *name) {
  * @param argc
  * @param argv
  */
-void XBOX_argparse_parse(XBOX_argparse *parser, int argc, char **argv) {
+void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
     argparse_option_parse(parser);
     check_valid_options(parser);
     argparse_parse_argv(parser, argc, argv);

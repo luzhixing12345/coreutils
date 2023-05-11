@@ -76,7 +76,7 @@ void XBOX_pwd() {
 int main(int argc, const char **argv) {
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        XBOX_ARG_INT(NULL, [-v][--version][help = "show version"]),
+        XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "show version"]),
         XBOX_ARG_BOOLEAN(&logical,
                          [-L][--logical][help = "print the value of $PWD if it names the current working directory"]),
         XBOX_ARG_BOOLEAN(&physical,
@@ -84,7 +84,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_MULTI | XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
     XBOX_argparse_describe(&parser, "pwd", "Print the name of the current working directory", "");
     XBOX_argparse_parse(&parser, argc, argv);
 

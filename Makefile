@@ -19,7 +19,13 @@ OBJ = $(SRC:$(SRC_EXT)=o)
 HEADER = $(wildcard $(SRC_PATH)/*.h)
 EXE = $(OBJ:%.o=%)
 
+ifeq ($(MAKECMDGOALS),debug)
+CFLAGS+=-g
+endif
+
 all: $(EXE)
+
+debug: all
 
 $(EXE): %: %.o
 	$(CC) $(CFLAGS) $< -o $@
@@ -70,3 +76,5 @@ release:
 tar:
 	tar -cvf $(TARGET).tar $(RELEASE)/
 
+ignore:
+	python ignore.py
