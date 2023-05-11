@@ -7,7 +7,8 @@
  *@Github: luzhixing12345
  */
 
-#pragma once
+#ifndef XBOX_XARGPARSE_H
+#define XBOX_XARGPARSE_H
 
 // #include <stdint.h>
 #include <ctype.h>
@@ -46,7 +47,8 @@ enum argparse_flag {
     XBOX_ARGPARSE_ENABLE_STICK = 1 << 1,     // 允许参数粘连 -O1 -Iinclude/
     XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,     // 允许参数等号 -i=123
     XBOX_ARGPARSE_ENABLE_MULTI = 1 << 3,     // 允许多个分离参数 -D __KERNEL__ -D __GNU__
-    XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 4  // 允许boolean类型参数粘连
+    XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 4,  // 允许boolean类型参数粘连
+    XBOX_ARGPARSE_DISABLE_SORT = 1 << 5
 };
 
 typedef struct {
@@ -65,7 +67,6 @@ typedef struct {
  * argpparse
  */
 typedef struct {
-    // user supplied
     const char *name;
     argparse_option *options;
     const char *description;  // a description after usage
@@ -76,22 +77,22 @@ typedef struct {
 
 // built-in option macros
 
-#define XBOX_ARG_BOOLEAN(a, ...) \
-    { ARGPARSE_OPT_BOOLEAN, a, #__VA_ARGS__ }
-#define XBOX_ARG_INT(a, ...) \
-    { ARGPARSE_OPT_INT, a, #__VA_ARGS__ }
-#define XBOX_ARG_STR(a, ...) \
-    { ARGPARSE_OPT_STR, a, #__VA_ARGS__ }
-#define XBOX_ARG_INT_GROUP(a, ...) \
-    { ARGPARSE_OPT_INT_GROUP, a, #__VA_ARGS__ }
-#define XBOX_ARG_INT_GROUPS(a, ...) \
-    { ARGPARSE_OPT_INT_GROUPS, a, #__VA_ARGS__ }
-#define XBOX_ARG_STR_GROUP(a, ...) \
-    { ARGPARSE_OPT_STR_GROUP, a, #__VA_ARGS__ }
-#define XBOX_ARG_STR_GROUPS(a, ...) \
-    { ARGPARSE_OPT_STR_GROUPS, a, #__VA_ARGS__ }
-#define XBOX_ARG_END(...) \
-    { ARGPARSE_OPT_END, #__VA_ARGS__ }
+#define XBOX_ARG_BOOLEAN(a, options) \
+    { ARGPARSE_OPT_BOOLEAN, a, #options }
+#define XBOX_ARG_INT(a, options) \
+    { ARGPARSE_OPT_INT, a, #options }
+#define XBOX_ARG_STR(a, options) \
+    { ARGPARSE_OPT_STR, a, #options }
+#define XBOX_ARG_INT_GROUP(a, options) \
+    { ARGPARSE_OPT_INT_GROUP, a, #options }
+#define XBOX_ARG_INT_GROUPS(a, options) \
+    { ARGPARSE_OPT_INT_GROUPS, a, #options }
+#define XBOX_ARG_STR_GROUP(a, options) \
+    { ARGPARSE_OPT_STR_GROUP, a, #options }
+#define XBOX_ARG_STR_GROUPS(a, options) \
+    { ARGPARSE_OPT_STR_GROUPS, a, #options }
+#define XBOX_ARG_END() \
+    { ARGPARSE_OPT_END }
 
 /**
  * @brief (原地操作)去除字符串开头结尾的的空格和双引号 ""
@@ -265,7 +266,13 @@ int parse_optionstr(argparse_option *option) {
                 return XBOX_FORMAT_ERROR;
             }
             match_flag = 0;
-            char *argument = XBOX_splice(str, p, i - 1);
+            char *argument;
+            // 省略前后引号
+            if ((str[p] == str[i-1]) && ((str[p] == '\"' || str[i-1] == '\''))) {
+                argument = XBOX_splice(str, p+1, i - 2);
+            } else {
+                argument = XBOX_splice(str, p, i - 1);
+            }
             // printf("argument = [%s] [%d:%d]\n", argument, p ,i-1);
             if (i - p < 2) {
                 fprintf(stderr, "%s: argument define [%s] too short in %s\n", XBOX_ARGS_BUILD_ERROR, argument, str);
@@ -425,7 +432,10 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     // printf("max_length = %d\n",max_length);
     max_length += XBOX_MAX_LENGTH_BIAS;
 
-    qsort(parser->options, parser->args_number, sizeof(argparse_option), option_cmp);
+    // 考虑要不要加一个 flags...
+    if (!(parser->flag & XBOX_ARGPARSE_DISABLE_SORT)) {
+        qsort(parser->options, parser->args_number, sizeof(argparse_option), option_cmp);
+    }
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
@@ -631,7 +641,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
     }
 }
 
-void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
+void argparse_parse_argv(XBOX_argparse *parser, int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         int argv_length = strlen(argv[i]);
         if (argv_length >= 2 && argv[i][0] == '-') {
@@ -908,9 +918,26 @@ int XBOX_ismatch(XBOX_argparse *parser, char *name) {
  * @param argc
  * @param argv
  */
-void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
+void XBOX_argparse_parse(XBOX_argparse *parser, int argc, char **argv) {
     argparse_option_parse(parser);
     check_valid_options(parser);
     argparse_parse_argv(parser, argc, argv);
     return;
 }
+
+
+/**
+ * @brief char **数组释放
+ * 
+ * @param files 
+ * @param length 
+ */
+void XBOX_free_args(char **files, int length) {
+    if (length == 0) return;
+    for (int i=0;i<length;i++) {
+        free(files[i]);
+    }
+    free(files);
+}
+
+#endif // XBOX_XARGPARSE_H
