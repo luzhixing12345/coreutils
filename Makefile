@@ -1,7 +1,7 @@
 
 
 CC = gcc
-CFLAGS = -Wall -O2
+CFLAGS = -Wall
 TARGET = xbox
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)

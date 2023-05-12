@@ -1,8 +1,13 @@
 
 #include <dirent.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "xargparse.h"
 #include "xutils.h"
+
+#define IS_DIR(dp) (dp->type == DT_DIR)
 
 static const char *VERSION = "v0.0.1";
 
@@ -11,37 +16,93 @@ int all_files = 0;
 int directory_only = 0;
 int current_directory_only = 0;
 
-static const char *file_end = "└";
-static const char *file_item = "──";
-static const char *file_mid = "├";
-// static const char *file_fill = "│";
+int dir_count = 0;
+int file_count = 0;
+
+static const char *file_end = "└"; // \u2514
+static const char *file_item = "──"; // \u2500\u2500
+static const char *file_mid = "├"; // \u251C
+static const char *file_fill = "│"; // \u2502
+
 
 static int sort_cmp(const void *p1, const void *p2) {
-    struct dirent **dp1 = (struct dirent**)p1;
-    struct dirent **dp2 = (struct dirent**)p2;
-    return strcmp((*dp1)->d_name, (*dp2)->d_name);
-}
-
-void sort_files(XBOX_Dir *dir) {
-    qsort(dir->dp, dir->count,sizeof(struct dirent*), sort_cmp);
+    XBOX_File **dp1 = (XBOX_File **)p1;
+    XBOX_File **dp2 = (XBOX_File **)p2;
+    return strcmp((*dp1)->name, (*dp2)->name);
 }
 
 void XBOX_tree(XBOX_Dir *dir) {
-    sort_files(dir);
-    int dir_count = dir->d_count;
-    int file_count = dir->f_count;
-    printf("%s%s%s\n", XBOX_ANSI_COLOR_BLUE,dir->d_name, XBOX_ANSI_COLOR_RESET);
+    qsort(dir->dp, dir->count, sizeof(struct dirent *), sort_cmp);
+
+    dir_count += dir->d_count;
+    file_count += dir->f_count;
+
+    int depth = 0;  // 目录深度
+    XBOX_Dir *temp;
+    temp = dir;
+    while (temp->parent) {
+        temp = temp->parent;
+        depth++;
+    }
+    char position[100];  // 记录每一层对应的是不是最后一个元素
+    memset(position, 0, 100);
+    if (depth) {
+        temp = dir;
+        int i = 0;
+        while (temp->parent) {
+            position[depth - i - 1] = temp->is_last;
+            i++;
+            temp = temp->parent;
+        }
+    }
+
+    if (depth) {
+        for (int i = 0; i < depth - 1; i++) {
+            if (!position[i]) {
+                printf("%s   ", file_fill);
+            } else {
+                printf("    ");
+            }
+        }
+        printf("%s%s ", position[depth-1]?file_end:file_mid, file_item);
+    }
+
+    printf("%s%s%s\n", XBOX_ANSI_COLOR_BLUE, XBOX_get_last_path(dir->name), XBOX_ANSI_COLOR_RESET);
     for (int i = 0; i < dir->count; i++) {
-        if (!all_files && dir->dp[i]->d_name[0] == '.') {
-            if (dir->dp[i]->d_type == DT_DIR) dir_count--;
-            else file_count--;
+        // printf("[%d/%d]:[%s] = %s\n", i, dir->count, dir->d_name, dir->dp[i]->name);
+        if (!all_files && dir->dp[i]->name[0] == '.') {
+            if (IS_DIR(dir->dp[i]))
+                dir_count--;
+            else
+                file_count--;
             continue;
         }
-        printf("%s%s",i==dir->count-1?file_end:file_mid,file_item);
-        XBOX_colorprint_dir(dir->dp[i]);
-        printf("\n");
+        if (IS_DIR(dir->dp[i])) {
+            if ((!strcmp(".", dir->dp[i]->name) || !strcmp("..", dir->dp[i]->name))) {
+                continue;
+            } else {
+                char *sub_dir_name = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
+                XBOX_Dir *sub_dir = XBOX_open_dir(sub_dir_name);
+                sub_dir->parent = dir;
+                sub_dir->is_last = i == dir->count - 1;
+                XBOX_tree(sub_dir);
+            }
+        } else {
+            if (depth) {
+                for (int i = 0; i < depth; i++) {
+                    if (!position[i]) {
+                        printf("%s   ", file_fill);
+                    } else {
+                        printf("    ");
+                    }
+                }
+            }
+            printf("%s%s ", i == dir->count - 1 ? file_end : file_mid, file_item);
+            XBOX_colorprint(XBOX_path_join(dir->name, dir->dp[i]->name, NULL));
+            printf("\n");
+        }
     }
-    printf("\n%d directories, %d files\n", dir_count, file_count);
+    XBOX_free_directory(dir);
 }
 
 int main(int argc, const char **argv) {
@@ -75,19 +136,16 @@ int main(int argc, const char **argv) {
     if (n) {
         for (int i = 0; i < n; i++) {
             XBOX_Dir *directory = XBOX_open_dir(directories[i]);
+            directory->parent = NULL;
             XBOX_tree(directory);
-            XBOX_free_directory(directory);
+            printf("\n%d directories, %d files\n", dir_count, file_count);
         }
     } else {
         char *dir_name = ".";
         XBOX_Dir *directory = XBOX_open_dir(dir_name);
-        if (!directory) {
-            XBOX_free_args(directories, n);
-            XBOX_free_argparse(&parser);
-            return 1;
-        }
+        directory->parent = NULL;
         XBOX_tree(directory);
-        XBOX_free_directory(directory);
+        printf("\n%d directories, %d files\n", dir_count, file_count);
     }
 
     XBOX_free_args(directories, n);
