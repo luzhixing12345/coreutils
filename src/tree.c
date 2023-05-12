@@ -45,7 +45,6 @@ void XBOX_tree(XBOX_Dir *dir) {
         depth++;
     }
     char position[100];  // 记录每一层对应的是不是最后一个元素
-    memset(position, 0, 100);
     if (depth) {
         temp = dir;
         int i = 0;
