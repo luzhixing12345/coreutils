@@ -71,65 +71,6 @@ char *get_fs_type_name(int f_type) {
     return "unknown";
 }
 
-/* Return *ST's birth time, if available; otherwise return a value
-   with tv_sec and tv_nsec both equal to -1.  */
-struct timespec get_stat_birthtime(struct stat const *st) {
-    struct timespec t;
-
-#if (defined HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC || defined HAVE_STRUCT_STAT_ST_BIRTHTIM_TV_NSEC)
-    t = STAT_TIMESPEC(st, st_birthtim);
-#elif defined HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC
-    t.tv_sec = st->st_birthtime;
-    t.tv_nsec = st->st_birthtimensec;
-#elif defined _WIN32 && !defined __CYGWIN__
-    /* Native Windows platforms (but not Cygwin) put the "file creation
-       time" in st_ctime (!).  See
-       <https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/stat-functions>.  */
-#if _GL_WINDOWS_STAT_TIMESPEC
-    t = st->st_ctim;
-#else
-    t.tv_sec = st->st_ctime;
-    t.tv_nsec = 0;
-#endif
-#else
-    /* Birth time is not supported.  */
-    t.tv_sec = -1;
-    t.tv_nsec = -1;
-#endif
-
-#if (defined HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC || defined HAVE_STRUCT_STAT_ST_BIRTHTIM_TV_NSEC || \
-     defined HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
-    /* FreeBSD and NetBSD sometimes signal the absence of knowledge by
-       using zero.  Attempt to work around this problem.  Alas, this can
-       report failure even for valid timestamps.  Also, NetBSD
-       sometimes returns junk in the birth time fields; work around this
-       bug if it is detected.  */
-    if (!(t.tv_sec && 0 <= t.tv_nsec && t.tv_nsec < 1000000000)) {
-        t.tv_sec = -1;
-        t.tv_nsec = -1;
-    }
-#endif
-
-#if HAVE_GETATTRAT
-    if (t.tv_nsec < 0) {
-        nvlist_t *response;
-        if ((fd < 0 ? getattrat(AT_FDCWD, XATTR_VIEW_READWRITE, filename, &response)
-                    : fgetattr(fd, XATTR_VIEW_READWRITE, &response)) == 0) {
-            uint64_t *val;
-            uint_t n;
-            if (nvlist_lookup_uint64_array(response, A_CRTIME, &val, &n) == 0 && 2 <= n &&
-                val[0] <= TYPE_MAXIMUM(time_t) && val[1] < 1000000000 * 2 /* for leap seconds */) {
-                t.tv_sec = val[0];
-                t.tv_nsec = val[1];
-            }
-            nvlist_free(response);
-        }
-    }
-#endif
-
-    return t;
-}
-
 char *stat_file_type(struct stat *st) {
     switch (st->st_mode & S_IFMT) {
         case S_IFBLK:
@@ -270,20 +211,6 @@ void XBOX_stat(const char *name) {
     tm = localtime(&st.st_ctime);
     strftime(change_time, sizeof(change_time), "%Y-%m-%d %H:%M:%S", tm);
 
-    struct timespec birth_ts = get_stat_birthtime(&st);
-    char birth_time[20];
-    int has_birth_time = 0;
-    if (birth_ts.tv_nsec < 0) {
-        has_birth_time = 0;
-        birth_time[0] = '-';
-        birth_time[1] = '\0';
-    } else {
-        has_birth_time = 1;
-        struct tm *birth_tm;
-        time_t seconds = birth_ts.tv_sec;
-        gmtime_r(&seconds, birth_tm);
-        strftime(birth_time, sizeof(birth_time), "%Y-%m-%d %H:%M:%S", birth_tm);
-    }
 
     // 链接做处理
     if (S_ISLNK(st.st_mode)) {
@@ -321,11 +248,6 @@ void XBOX_stat(const char *name) {
     printf("Access: %s.%09ld %s\n", access_time, st.st_atim.tv_nsec, timezone_offset);  // 访问时间
     printf("Modify: %s.%09ld %s\n", modify_time, st.st_mtim.tv_nsec, timezone_offset);  // 修改时间
     printf("Change: %s.%09ld %s\n", change_time, st.st_ctim.tv_nsec, timezone_offset);  // 变更时间
-    if (has_birth_time) {
-        printf("Change: %s.%09ld %s\n", birth_time, birth_ts.tv_nsec, timezone_offset);
-    } else {
-        printf(" Birth: -\n");
-    }
 
     free(st_mode_rwx);
     return;
@@ -337,7 +259,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_STR_GROUPS(&dirs, [name = FILE]),
         XBOX_ARG_BOOLEAN(&dereference, [-L][--dereference][help = "follow links"]),
         XBOX_ARG_BOOLEAN(&file_system,
-                         [-f][--file - system][help = "display file system status instead of file status"]),
+                         [-f]["--file-system"][help = "display file system status instead of file status"]),
         XBOX_ARG_BOOLEAN(&terse, [-t][--terse][help = "print the information in terse form"]),
         XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
         XBOX_ARG_END()};

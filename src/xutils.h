@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define XBOX_LOG(fmt, ...) printf("[%s]:[%4d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define XBOX_TYPE(t) #t
@@ -132,16 +133,27 @@ char* XBOX_path_join(const char* path, ...) {
  * @return const char*
  */
 const char* XBOX_get_last_path(const char* path) {
+    static char result[256];
     const char* p = strrchr(path, '/');
     if (p == NULL) {
         // 如果路径中没有斜杠，则返回整个路径
         return path;
     } else {
         // 如果路径中有斜杠，则返回最后一个斜杠后面的部分
-        return p + 1;
+        const char* p2 = strrchr(path, '/') + 1;
+        if (*p2 == '\0') {
+            // 如果最后一个斜杠后面没有内容，则返回前一个斜杠后面的部分
+            const char* p3 = strrchr(path, '/') - 1;
+            int len = p3 - path + 1;
+            strncpy(result, path, len);
+            result[len] = '\0';
+            return result;
+        } else {
+            // 如果最后一个斜杠后面有内容，则返回最后一个斜杠后面的部分
+            return p2;
+        }
     }
 }
-
 int is_image(const char* name) {
     const char* ext = strrchr(name, '.');
     if (ext == NULL) {
@@ -154,13 +166,19 @@ int is_image(const char* name) {
     return 0;
 }
 
-void XBOX_colorprint(const char* name) {
+/**
+ * @brief 使用 ASNI 虚拟控制序列终端彩色打印
+ *
+ * @param word 打印的字
+ * @param full_path 全路径
+ */
+void XBOX_colorprint(const char* word, const char* full_path) {
     char* color_code = NULL;
     struct stat file_stat;
-    if (stat(name, &file_stat) == -1) {
+    if (stat(full_path, &file_stat) == -1) {
         // error occurred while getting file status
         color_code = XBOX_ANSI_COLOR_RESET;  // set the color to default
-        printf("%s%s%s", color_code, XBOX_get_last_path(name), XBOX_ANSI_COLOR_RESET);
+        printf("%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
         return;
     }
     if (S_ISREG(file_stat.st_mode)) {
@@ -168,7 +186,7 @@ void XBOX_colorprint(const char* name) {
         if (file_stat.st_mode & S_IXUSR || file_stat.st_mode & S_IXGRP || file_stat.st_mode & S_IXOTH) {
             // file has execute permission
             color_code = XBOX_ANSI_COLOR_GREEN;  // set the color to green
-        } else if (is_image(name)) {
+        } else if (is_image(full_path)) {
             // image file
             color_code = XBOX_ANSI_COLOR_MAGENTA;  // set the color to magenta
         } else {
@@ -190,7 +208,7 @@ void XBOX_colorprint(const char* name) {
         // unknown file type
         color_code = XBOX_ANSI_COLOR_RESET;
     }
-    printf("%s%s%s", color_code, XBOX_get_last_path(name), XBOX_ANSI_COLOR_RESET);
+    printf("%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
 }
 
 #endif  // XBOX_XUTILS_H
