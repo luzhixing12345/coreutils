@@ -41,10 +41,11 @@ typedef struct XBOX_Dir {
 /**
  * @brief 打开一个目录并读取其中所有的文件和目录
  *
- * @param path
+ * @param path 路径名
+ * @param cdir 是否保存 . ..
  * @return XBOX_Dir* (需要释放)
  */
-XBOX_Dir* XBOX_open_dir(const char* path) {
+XBOX_Dir* XBOX_open_dir(const char* path, int cdir) {
     DIR* dir;
     struct dirent* entry;
 
@@ -60,6 +61,9 @@ XBOX_Dir* XBOX_open_dir(const char* path) {
     XBOX_Dir* directory = (XBOX_Dir*)malloc(sizeof(XBOX_Dir));
     memset(directory, 0, sizeof(XBOX_Dir));
     while ((entry = readdir(dir)) != NULL) {
+        if (!cdir && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+            continue;
+        }
         directory->count++;
         if (entry->d_type == DT_DIR) {
             // 目录
@@ -75,6 +79,9 @@ XBOX_Dir* XBOX_open_dir(const char* path) {
     }
     int i = 0;
     while ((entry = readdir(dir)) != NULL) {
+        if (!cdir && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+            continue;
+        }
         length = strlen(entry->d_name);
         strncpy(directory->dp[i]->name, entry->d_name, length);
         directory->dp[i]->name[length] = 0;

@@ -570,7 +570,12 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         return;
     } else if ((!enable_multi && option->type == ARGPARSE_OPT_INT) || option->type == ARGPARSE_OPT_INT_GROUP) {
         int value = 0;
+        int signal = 1;
         char *temp = option->value;
+        if (*temp == '-') {
+            signal = -1;
+            temp++;
+        }
         while (*temp != '\0') {
             if (*temp < '0' || *temp > '9') {
                 fprintf(stderr, "%s: argument assign to be int but get [%s]\n", XBOX_ARGS_PARSE_ERROR, option->value);
@@ -580,7 +585,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             value = value * 10 + (*temp) - '0';
             temp++;
         }
-        *(int *)option->p = value;
+        *(int *)option->p = value * signal;
         option->match = 1;
         return;
     } 
@@ -600,7 +605,12 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
 
     } else if (option->type == ARGPARSE_OPT_INT || option->type == ARGPARSE_OPT_INT_GROUPS) {
         int value = 0;
+        int signal = 1;
         char *temp = option->value;
+        if (*temp == '-') {
+            signal = -1;
+            temp++;
+        }
         while (*temp != '\0') {
             if (*temp < '0' || *temp > '9') {
                 fprintf(stderr, "%s: argument assign to be int but get [%s]\n", XBOX_ARGS_PARSE_ERROR, option->value);
@@ -617,13 +627,18 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             new_p = (int *)realloc(*(int **)option->p, sizeof(int) * match_number);
         }
         (*(int **)option->p) = new_p;
-        (*(int **)option->p)[match_number - 1] = value;
+        (*(int **)option->p)[match_number - 1] = value * signal;
     } else if (option->type == ARGPARSE_OPT_STR_GROUP) {
         *(char **)option->p = (char *)malloc(strlen(option->value));
         strcpy(*(char **)option->p, option->value);
     } else if (option->type == ARGPARSE_OPT_INT_GROUP) {
         int value = 0;
         char *temp = option->value;
+        int signal = 1;
+        if (*temp == '-') {
+            signal = -1;
+            temp++;
+        }
         while (*temp != '\0') {
             if (*temp < '0' || *temp > '9') {
                 fprintf(stderr, "%s: argument assign to be int but get [%s]\n", XBOX_ARGS_PARSE_ERROR, option->value);
@@ -633,7 +648,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
             value = value * 10 + (*temp) - '0';
             temp++;
         }
-        *(int *)option->p = value;
+        *(int *)option->p = value * signal;
     } else {
         fprintf(stderr, "%s: unknown option type for [%s]\n", XBOX_ARGS_PARSE_ERROR, option->name);
         XBOX_free_argparse(parser);
@@ -736,13 +751,13 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                     XBOX_free_argparse(parser);
                     exit(XBOX_FORMAT_ERROR);
                 }
-                if (argv[i + 1][0] == '-' && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-                    fprintf(stderr,
-                            "%s: [%s] will be passed as the argument for [%s]\n",
-                            XBOX_ARGS_PARSE_WARNING,
-                            argv[i + 1],
-                            argv[i]);
-                }
+                // if (argv[i + 1][0] == '-' && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+                //     fprintf(stderr,
+                //             "%s: [%s] will be passed as the argument for [%s]\n",
+                //             XBOX_ARGS_PARSE_WARNING,
+                //             argv[i + 1],
+                //             argv[i]);
+                // }
                 if (option->value) {
                     free(option->value);
                 }
