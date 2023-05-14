@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "xutils.h"
 #include "xargparse.h"
 
 char **dirs;
@@ -92,49 +93,6 @@ char *stat_file_type(struct stat *st) {
     }
 }
 
-/**
- * @brief 返回文件的[读/写/执行]权限的字符串(需要free)
- *
- * @param mode
- * @return char*
- */
-char *XBOX_stat_access_mode(mode_t mode) {
-    char *buf = malloc(sizeof(char) * 11);
-    strcpy(buf, "-rwxrwxrwx");
-    if (S_ISREG(mode)) {
-        buf[0] = '-';
-    } else if (S_ISDIR(mode)) {
-        buf[0] = 'd';
-    } else if (S_ISCHR(mode)) {
-        buf[0] = 'c';
-    } else if (S_ISBLK(mode)) {
-        buf[0] = 'b';
-    } else if (S_ISFIFO(mode)) {
-        buf[0] = 'p';
-    } else if (S_ISLNK(mode)) {
-        buf[0] = 'l';
-        return buf;
-    } else if (S_ISSOCK(mode)) {
-        buf[0] = 's';
-    } else {
-        buf[0] = '-';
-        // UNKNOWN type?
-    }
-    mode_t umask_val = umask(0);                // 获取当前 umask 值
-    umask(umask_val);                           // 恢复原来的 umask 值
-    mode_t effective_mode = mode & ~umask_val;  // 计算生效的权限值
-    buf[1] = (effective_mode & S_IRUSR) ? 'r' : '-';
-    buf[2] = (effective_mode & S_IWUSR) ? 'w' : '-';
-    buf[3] = (effective_mode & S_IXUSR) ? 'x' : '-';
-    buf[4] = (effective_mode & S_IRGRP) ? 'r' : '-';
-    buf[5] = (effective_mode & S_IWGRP) ? 'w' : '-';
-    buf[6] = (effective_mode & S_IXGRP) ? 'x' : '-';
-    buf[7] = (effective_mode & S_IROTH) ? 'r' : '-';
-    buf[8] = (effective_mode & S_IWOTH) ? 'w' : '-';
-    buf[9] = (effective_mode & S_IXOTH) ? 'x' : '-';
-    buf[10] = '\0';
-    return buf;
-}
 
 void XBOX_stat(const char *name) {
     struct stat st;
@@ -248,8 +206,6 @@ void XBOX_stat(const char *name) {
     printf("Access: %s.%09ld %s\n", access_time, st.st_atim.tv_nsec, timezone_offset);  // 访问时间
     printf("Modify: %s.%09ld %s\n", modify_time, st.st_mtim.tv_nsec, timezone_offset);  // 修改时间
     printf("Change: %s.%09ld %s\n", change_time, st.st_ctim.tv_nsec, timezone_offset);  // 变更时间
-
-    free(st_mode_rwx);
     return;
 }
 
@@ -287,15 +243,14 @@ int main(int argc, const char **argv) {
     if (n) {
         for (int i = 0; i < n; i++) {
             XBOX_stat(dirs[i]);
-            free(dirs[i]);
         }
-        free(dirs);
     } else {
         XBOX_argparse_info(&parser);
         XBOX_free_argparse(&parser);
         return 0;
     }
 
+    XBOX_free_args(dirs, n);
     XBOX_free_argparse(&parser);
     return 0;
 }

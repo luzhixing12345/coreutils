@@ -1,6 +1,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "xargparse.h"
 #include "xutils.h"
@@ -18,6 +21,7 @@ static int terminal_width = 0;
 
 char **dirs = NULL;
 int all_files = 0;
+int almost_all = 0;
 int long_list = 0;
 
 static int sort_cmp(const void *p1, const void *p2) {
@@ -90,8 +94,75 @@ int XBOX_ls_calculaterow(XBOX_Dir *dir, int terminal_width) {
 }
 
 void XBOX_ls(const char *dir_name) {
-    XBOX_Dir *dir = XBOX_open_dir(dir_name, all_files ? XBOX_DIR_ALL : XBOX_DIR_IGNORE_HIDDEN);
-    qsort(dir->dp, dir->count, sizeof(struct dirent *), sort_cmp);
+
+    int flag = 0;
+    if (all_files) {
+        flag = XBOX_DIR_ALL;
+    } else if (almost_all) {
+        flag = XBOX_DIR_IGNORE_CURRENT;
+    } else {
+        flag = XBOX_DIR_IGNORE_HIDDEN;
+    }
+
+    XBOX_Dir *dir = XBOX_open_dir(dir_name,flag);
+    qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
+
+    // 对于 -l 的情况
+
+    if (long_list) {
+        int total_block_number = 0;
+        int max_block_size_length = 0;
+        int max_link_length = 0;
+        struct stat file_stat;
+        for (int i = 0; i < dir->count; i++) {
+            if (stat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
+                XBOX_free_directory(dir);
+                perror("stat");
+                return;
+            }
+            total_block_number += file_stat.st_blocks;
+            int size_length = XBOX_number_length(file_stat.st_size);
+            int link_length = XBOX_number_length(file_stat.st_nlink);
+            max_block_size_length = MAX(max_block_size_length, size_length);
+            max_link_length = MAX(max_link_length, link_length);
+        }
+        printf("total %d\n", total_block_number / 2);
+        struct passwd *pwd;
+        struct group *grp;
+
+        for (int i = 0; i < dir->count; i++) {
+            if (stat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
+                XBOX_free_directory(dir);
+                perror("stat");
+                return;
+            }
+            char *st_mode_rwx = XBOX_stat_access_mode(file_stat.st_mode);
+            pwd = getpwuid(file_stat.st_uid);
+            grp = getgrgid(file_stat.st_gid);
+
+            struct tm *tm;
+            char modify_time[20];
+            // 格式化时间
+
+            tm = localtime(&file_stat.st_mtime);
+            strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
+
+            printf("%s %*ld %s %s %*ld %s %s\n",
+                   st_mode_rwx,
+                   max_link_length,
+                   file_stat.st_nlink,
+                   (pwd == NULL) ? "UNKNOWN" : pwd->pw_name,
+                   (grp == NULL) ? "UNKNOWN" : grp->gr_name,
+                   max_block_size_length,
+                   file_stat.st_size,
+                   modify_time,
+                   XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name,dir->dp[i]->name,NULL)));
+            
+        }
+        XBOX_free_directory(dir);
+        return;
+    }
+
     int row = XBOX_ls_calculaterow(dir, terminal_width);
     if (row <= 0) {
         XBOX_free_directory(dir);
@@ -100,9 +171,8 @@ void XBOX_ls(const char *dir_name) {
     }
     // printf("col = %d\n", row);
 
-
     // 计算每一列的宽度
-    int col_num = (dir->count+row-1) / row;
+    int col_num = (dir->count + row - 1) / row;
     int *ls_col_width = malloc(sizeof(int) * col_num);
 
     int index = 0;
@@ -129,7 +199,6 @@ void XBOX_ls(const char *dir_name) {
     //     printf("[%d] = [%d]\n",i,ls_col_width[i]);
     // }
 
-
     int dp_index = 0;
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col_num; j++) {
@@ -141,10 +210,10 @@ void XBOX_ls(const char *dir_name) {
                 XBOX_colorprint(dir->dp[dp_index]->name, XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL));
             printf("%-s", file_name);
             int left_space_number = ls_col_width[j] - strlen(dir->dp[dp_index]->name);
-            for (int k=0;k<left_space_number;k++) {
+            for (int k = 0; k < left_space_number; k++) {
                 printf(" ");
             }
-            if (j != col_num-1) {
+            if (j != col_num - 1) {
                 printf("  ");
             }
         }
@@ -161,6 +230,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
         XBOX_ARG_BOOLEAN(&all_files, [-a][--all][help = "show help information"]),
         XBOX_ARG_BOOLEAN(&long_list, [-l][name = "long-list"][help = "use a long listing format"]),
+        XBOX_ARG_BOOLEAN(&almost_all, [-A][name="almost-all"][help="do not list implied . and .."]),
         XBOX_ARG_STR_GROUPS(&dirs, [name = src][help = "source"]),
         XBOX_ARG_END()};
 

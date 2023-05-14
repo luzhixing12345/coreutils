@@ -250,4 +250,57 @@ char* XBOX_colorprint(const char* word, const char* full_path) {
     return result;
 }
 
+/**
+ * @brief 返回文件的[读/写/执行]权限的字符串
+ *
+ * @param mode
+ * @return char*
+ */
+char* XBOX_stat_access_mode(mode_t mode) {
+    static char buf[12];
+    strcpy(buf, "-rwxrwxrwx");
+    if (S_ISREG(mode)) {
+        buf[0] = '-';
+    } else if (S_ISDIR(mode)) {
+        buf[0] = 'd';
+    } else if (S_ISCHR(mode)) {
+        buf[0] = 'c';
+    } else if (S_ISBLK(mode)) {
+        buf[0] = 'b';
+    } else if (S_ISFIFO(mode)) {
+        buf[0] = 'p';
+    } else if (S_ISLNK(mode)) {
+        buf[0] = 'l';
+        return buf;
+    } else if (S_ISSOCK(mode)) {
+        buf[0] = 's';
+    } else {
+        buf[0] = '-';
+        // UNKNOWN type?
+    }
+    mode_t umask_val = umask(0);                // 获取当前 umask 值
+    umask(umask_val);                           // 恢复原来的 umask 值
+    mode_t effective_mode = mode & ~umask_val;  // 计算生效的权限值
+    buf[1] = (effective_mode & S_IRUSR) ? 'r' : '-';
+    buf[2] = (effective_mode & S_IWUSR) ? 'w' : '-';
+    buf[3] = (effective_mode & S_IXUSR) ? 'x' : '-';
+    buf[4] = (effective_mode & S_IRGRP) ? 'r' : '-';
+    buf[5] = (effective_mode & S_IWGRP) ? 'w' : '-';
+    buf[6] = (effective_mode & S_IXGRP) ? 'x' : '-';
+    buf[7] = (effective_mode & S_IROTH) ? 'r' : '-';
+    buf[8] = (effective_mode & S_IWOTH) ? 'w' : '-';
+    buf[9] = (effective_mode & S_IXOTH) ? 'x' : '-';
+    buf[10] = '\0';
+    return buf;
+}
+
+int XBOX_number_length(int number) {
+    int size_length = 0;
+    while (number) {
+        size_length++;
+        number /= 10;
+    }
+    return size_length;
+}
+
 #endif  // XBOX_XUTILS_H
