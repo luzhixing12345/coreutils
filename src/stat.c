@@ -1,19 +1,11 @@
 
-#include <dirent.h>
 #include <grp.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <sys/sysmacros.h>
-#include <sys/types.h>
 #include <sys/vfs.h>
 #include <time.h>
-#include <unistd.h>
 
-#include "xutils.h"
-#include "xargparse.h"
+#include "xbox.h"
 
 char **dirs;
 static int dereference = 0;
@@ -221,7 +213,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK | XBOX_ARGPARSE_ENABLE_MULTI);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK|XBOX_ARGPARSE_ENABLE_EQUAL);
     XBOX_argparse_describe(&parser,
                            "stat",
                            "Display file or file system status.",
@@ -230,13 +222,9 @@ int main(int argc, const char **argv) {
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
-        XBOX_free_argparse(&parser);
-        return 0;
     }
     if (XBOX_ismatch(&parser, "version")) {
-        printf("stat (GNU coreutils) 8.32\n");
-        XBOX_free_argparse(&parser);
-        return 0;
+        printf("%s\n",XBOX_VERSION);
     }
 
     int n = XBOX_ismatch(&parser, "FILE");
@@ -246,8 +234,6 @@ int main(int argc, const char **argv) {
         }
     } else {
         XBOX_argparse_info(&parser);
-        XBOX_free_argparse(&parser);
-        return 0;
     }
 
     XBOX_free_args(dirs, n);

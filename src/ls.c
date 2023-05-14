@@ -1,19 +1,13 @@
-#include <dirent.h>
-#include <errno.h>
+
 #include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <time.h>
 
 #include "xargparse.h"
-#include "xutils.h"
+#include "xbox.h"
 
 #define XBOX_LS_ALIGN_SPACE 2
 
@@ -231,11 +225,12 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&all_files, [-a][--all][help = "show help information"]),
         XBOX_ARG_BOOLEAN(&long_list, [-l][name = "long-list"][help = "use a long listing format"]),
         XBOX_ARG_BOOLEAN(&almost_all, [-A][name="almost-all"][help="do not list implied . and .."]),
+        XBOX_ARG_BOOLEAN(NULL, [--version][help="show version"]),
         XBOX_ARG_STR_GROUPS(&dirs, [name = src][help = "source"]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK|XBOX_ARGPARSE_ENABLE_EQUAL);
     XBOX_argparse_describe(&parser,
                            "ls",
                            "List information about the FILEs (the current directory by default).\nSort entries "
@@ -245,6 +240,9 @@ int main(int argc, const char **argv) {
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
+    }
+    if (XBOX_ismatch(&parser, "version")) {
+        printf("%s\n",XBOX_VERSION);
     }
     int n = XBOX_ismatch(&parser, "src");
 

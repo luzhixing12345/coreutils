@@ -1,15 +1,6 @@
 
 
-#include <errno.h>
-#include <linux/limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "xargparse.h"
+#include "xbox.h"
 
 static int logical = 1;  // default
 static int physical = 0;
@@ -84,23 +75,18 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK | XBOX_ARGPARSE_ENABLE_EQUAL);
     XBOX_argparse_describe(&parser, "pwd", "Print the name of the current working directory", "");
     XBOX_argparse_parse(&parser, argc, argv);
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
-        XBOX_free_argparse(&parser);
-        return 0;
     }
 
     if (XBOX_ismatch(&parser, "version")) {
-        printf("v0.0.1\n");
-        XBOX_free_argparse(&parser);
-        return 0;
+        printf("%s\n", XBOX_VERSION);
     }
     XBOX_pwd();
-
     XBOX_free_argparse(&parser);
     return 0;
 }

@@ -1,15 +1,4 @@
-
-#include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "xargparse.h"
-#include "xutils.h"
-
-
-
-static const char *VERSION = "v0.0.1";
+#include "xbox.h"
 
 static char **directories = NULL;
 static int all_files = 0;
@@ -154,7 +143,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK|XBOX_ARGPARSE_ENABLE_EQUAL);
     XBOX_argparse_describe(&parser, "tree", "list the directory in tree format", "");
     XBOX_argparse_parse(&parser, argc, argv);
 
@@ -165,7 +154,7 @@ int main(int argc, const char **argv) {
     }
 
     if (XBOX_ismatch(&parser, "version")) {
-        printf("%s\n", VERSION);
+        printf("%s\n", XBOX_VERSION);
     }
     if (XBOX_ismatch(&parser, "has-color")) {
         no_color = 0;

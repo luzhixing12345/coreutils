@@ -10,6 +10,8 @@
 #ifndef XBOX_XARGPARSE_H
 #define XBOX_XARGPARSE_H
 
+const char *XBOX_VERSION = "v0.0.1";
+
 // #include <stdint.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -922,7 +924,7 @@ int XBOX_ismatch(XBOX_argparse *parser, char *name) {
             return option->match;
         }
     }
-    fprintf(stderr, "%s: no matched name in options for [%s]\n", XBOX_ARGS_PARSE_ERROR, name);
+    fprintf(stderr, "%s: no matched name in options for [%s]\n", XBOX_ARGS_PARSE_WARNING, name);
     return 0;
 }
 

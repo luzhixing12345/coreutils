@@ -3,13 +3,9 @@
 #include "cat.h"
 
 #include <fcntl.h>
-#include <stdio.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-#include "xargparse.h"
+#include "xbox.h"
 
 // 全局变量
 static int show_end = 0;
@@ -127,7 +123,7 @@ int main(int argc, char const *argv[]) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK | XBOX_ARGPARSE_ENABLE_MULTI);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK | XBOX_ARGPARSE_ENABLE_EQUAL);
     XBOX_argparse_describe(&parser,
                            "cat",
                            "Concateate FILE(s) to standard output.\n\nWith no FILE, or when FILE is -, read standard "
@@ -139,13 +135,9 @@ int main(int argc, char const *argv[]) {
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
-        XBOX_free_argparse(&parser);
-        return 0;
     }
     if (XBOX_ismatch(&parser, "version")) {
-        printf("cat (XBOX coreutils) 0.0.1\n");
-        XBOX_free_argparse(&parser);
-        return 0;
+        printf("%s\n", XBOX_VERSION);
     }
 
     if (XBOX_ismatch(&parser, "show-all")) {
@@ -162,14 +154,9 @@ int main(int argc, char const *argv[]) {
         // printf("%d\n",n);
         for (int i = 0; i < n; i++) {
             XBOX_cat(files[i]);
-            free(files[i]);
         }
-        free(files);
-    } else {
-        XBOX_argparse_info(&parser);
-        XBOX_free_argparse(&parser);
-        return 0;
     }
+    XBOX_free_args(files, n);
     XBOX_free_argparse(&parser);
     return 0;
 }
