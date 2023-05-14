@@ -23,6 +23,14 @@
 #define XBOX_ANSI_COLOR_CYAN "\033[1;96m"
 #define XBOX_ANSI_COLOR_RESET "\033[1;0m"
 
+#define XBOX_DIR_IGNORE_HIDDEN 0
+#define XBOX_DIR_IGNORE_CURRENT 1
+#define XBOX_DIR_ALL 2
+
+#define XBOX_PRINT_BUFFER_SIZE 1024
+
+#define XBOX_IS_DIR(dp) (dp->type == DT_DIR)
+
 typedef struct XBOX_File {
     unsigned char type;
     char name[256];
@@ -42,10 +50,10 @@ typedef struct XBOX_Dir {
  * @brief 打开一个目录并读取其中所有的文件和目录
  *
  * @param path 路径名
- * @param cdir 是否保存 . ..
+ * @param flag XBOX_DIR_IGNORE_HIDDEN: 不包含.开头的 XBOX_DIR_IGNORE_CURRENT: 不包含.和.. XBOX_DIR_ALL: 全部包含
  * @return XBOX_Dir* (需要释放)
  */
-XBOX_Dir* XBOX_open_dir(const char* path, int cdir) {
+XBOX_Dir* XBOX_open_dir(const char* path, int flag) {
     DIR* dir;
     struct dirent* entry;
 
@@ -61,15 +69,19 @@ XBOX_Dir* XBOX_open_dir(const char* path, int cdir) {
     XBOX_Dir* directory = (XBOX_Dir*)malloc(sizeof(XBOX_Dir));
     memset(directory, 0, sizeof(XBOX_Dir));
     while ((entry = readdir(dir)) != NULL) {
-        if (!cdir && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+        if (flag == 0 && entry->d_name[0] == '.') {
             continue;
-        }
-        directory->count++;
-        if (entry->d_type == DT_DIR) {
-            // 目录
-            directory->d_count++;
+        } else if (flag == 1 && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+            continue;
         } else {
-            directory->f_count++;
+            // flag = 2
+            directory->count++;
+            if (entry->d_type == DT_DIR) {
+                // 目录
+                directory->d_count++;
+            } else {
+                directory->f_count++;
+            }
         }
     }
     rewinddir(dir);
@@ -79,14 +91,17 @@ XBOX_Dir* XBOX_open_dir(const char* path, int cdir) {
     }
     int i = 0;
     while ((entry = readdir(dir)) != NULL) {
-        if (!cdir && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+        if (flag == 0 && entry->d_name[0] == '.') {
             continue;
+        } else if (flag == 1 && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+            continue;
+        } else {
+            length = strlen(entry->d_name);
+            strncpy(directory->dp[i]->name, entry->d_name, length);
+            directory->dp[i]->name[length] = 0;
+            directory->dp[i]->type = entry->d_type;
+            i++;
         }
-        length = strlen(entry->d_name);
-        strncpy(directory->dp[i]->name, entry->d_name, length);
-        directory->dp[i]->name[length] = 0;
-        directory->dp[i]->type = entry->d_type;
-        i++;
     }
     length = strlen(path);
     strncpy(directory->name, path, length);
@@ -173,20 +188,34 @@ int is_image(const char* name) {
     return 0;
 }
 
+int is_archive(const char* path) {
+    const char* ext = strrchr(path, '.');  // 获取文件名中的扩展名
+    if (ext != NULL) {
+        if (strcasecmp(ext, ".zip") == 0 || strcasecmp(ext, ".rar") == 0 || strcasecmp(ext, ".tar") == 0 ||
+            strcasecmp(ext, ".gz") == 0 || strcasecmp(ext, ".bz2") == 0) {
+            // 如果扩展名匹配，则认为是压缩包
+            return 1;
+        }
+    }
+    // 如果扩展名不匹配，则认为不是压缩包
+    return 0;
+}
+
 /**
  * @brief 使用 ASNI 虚拟控制序列终端彩色打印
  *
  * @param word 打印的字
  * @param full_path 全路径
  */
-void XBOX_colorprint(const char* word, const char* full_path) {
+char* XBOX_colorprint(const char* word, const char* full_path) {
     char* color_code = NULL;
     struct stat file_stat;
+    static char result[XBOX_PRINT_BUFFER_SIZE];
     if (stat(full_path, &file_stat) == -1) {
         // error occurred while getting file status
         color_code = XBOX_ANSI_COLOR_RESET;  // set the color to default
-        printf("%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
-        return;
+        sprintf(result, "%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
+        return result;
     }
     if (S_ISREG(file_stat.st_mode)) {
         // regular file
@@ -196,6 +225,8 @@ void XBOX_colorprint(const char* word, const char* full_path) {
         } else if (is_image(full_path)) {
             // image file
             color_code = XBOX_ANSI_COLOR_MAGENTA;  // set the color to magenta
+        } else if (is_archive(full_path)) {
+            color_code = XBOX_ANSI_COLOR_RED;  // set the color to red
         } else {
             color_code = XBOX_ANSI_COLOR_RESET;  // set the color to default
         }
@@ -215,7 +246,8 @@ void XBOX_colorprint(const char* word, const char* full_path) {
         // unknown file type
         color_code = XBOX_ANSI_COLOR_RESET;
     }
-    printf("%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
+    sprintf(result, "%s%s%s", color_code, word, XBOX_ANSI_COLOR_RESET);
+    return result;
 }
 
 #endif  // XBOX_XUTILS_H

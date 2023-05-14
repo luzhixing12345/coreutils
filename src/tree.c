@@ -7,7 +7,7 @@
 #include "xargparse.h"
 #include "xutils.h"
 
-#define IS_DIR(dp) (dp->type == DT_DIR)
+
 
 static const char *VERSION = "v0.0.1";
 
@@ -47,7 +47,7 @@ static int sort_cmp(const void *p1, const void *p2) {
 
 void XBOX_tree(XBOX_Dir *dir) {
     if (!unsort) {
-        qsort(dir->dp, dir->count, sizeof(struct dirent *), sort_cmp);
+        qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
     }
 
     int depth = 0;  // 目录深度
@@ -66,8 +66,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             temp = temp->parent;
         }
     } else {
-        XBOX_colorprint(dir->name, dir->name);
-        printf("\n");
+        printf("%s\n",XBOX_colorprint(dir->name, dir->name));
     }
     // 深度 -L
     if (level > 0 && depth >= level) {
@@ -82,7 +81,7 @@ void XBOX_tree(XBOX_Dir *dir) {
         // printf("[%d/%d]:[%s] = %s\n", i, dir->count, dir->name, dir->dp[i]->name);
         // . 开头默认隐藏
         if (dir->dp[i]->name[0] == '.' && !all_files) {
-            if (IS_DIR(dir->dp[i])) {
+            if (XBOX_IS_DIR(dir->dp[i])) {
                 dir_count--;
             } else {
                 file_count--;
@@ -91,7 +90,7 @@ void XBOX_tree(XBOX_Dir *dir) {
                 continue;
             }
         }
-        if (IS_DIR(dir->dp[i])) {
+        if (XBOX_IS_DIR(dir->dp[i])) {
             for (int i = 0; i < depth; i++) {
                 if (!position[i]) {
                     printf("%s   ", file_fill);
@@ -110,7 +109,7 @@ void XBOX_tree(XBOX_Dir *dir) {
                 continue;
             }
             char *sub_dir_name = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
-            XBOX_Dir *sub_dir = XBOX_open_dir(sub_dir_name, 0);
+            XBOX_Dir *sub_dir = XBOX_open_dir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
             sub_dir->parent = dir;
             sub_dir->is_last = i == dir->count - 1;
             XBOX_tree(sub_dir);
@@ -129,7 +128,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (no_color) {
                 printf("%s", dir->dp[i]->name);
             } else {
-                XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL));
+                printf("%s",XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
             }
             printf("\n");
         }
@@ -185,7 +184,7 @@ int main(int argc, const char **argv) {
 
     if (n) {
         for (int i = 0; i < n; i++) {
-            XBOX_Dir *directory = XBOX_open_dir(directories[i],0);
+            XBOX_Dir *directory = XBOX_open_dir(directories[i],XBOX_DIR_IGNORE_CURRENT);
             directory->parent = NULL;
             XBOX_tree(directory);
             printf("\n%d directories", dir_count);
@@ -196,7 +195,7 @@ int main(int argc, const char **argv) {
         }
     } else {
         char *dir_name = ".";
-        XBOX_Dir *directory = XBOX_open_dir(dir_name,0);
+        XBOX_Dir *directory = XBOX_open_dir(dir_name,XBOX_DIR_IGNORE_CURRENT);
         directory->parent = NULL;
         XBOX_tree(directory);
         printf("\n%d directories", dir_count);
