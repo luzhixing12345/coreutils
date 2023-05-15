@@ -1,3 +1,4 @@
+#include "xargparse.h"
 #include "xbox.h"
 
 static char **directories = NULL;
@@ -143,7 +144,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK|XBOX_ARGPARSE_ENABLE_EQUAL);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK|XBOX_ARGPARSE_ENABLE_EQUAL|XBOX_ARGPARSE_ENABLE_STICK);
     XBOX_argparse_describe(&parser, "tree", "list the directory in tree format", "");
     XBOX_argparse_parse(&parser, argc, argv);
 

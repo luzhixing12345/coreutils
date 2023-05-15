@@ -230,7 +230,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK|XBOX_ARGPARSE_ENABLE_EQUAL);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
     XBOX_argparse_describe(&parser,
                            "ls",
                            "List information about the FILEs (the current directory by default).\nSort entries "

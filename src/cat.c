@@ -109,21 +109,21 @@ int main(int argc, char const *argv[]) {
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
         XBOX_ARG_STR_GROUPS(&files, [name = FILE][help = "source"]),
-        XBOX_ARG_BOOLEAN(NULL, [-A][--show - all][help = "equivalent to -vET"]),
-        XBOX_ARG_BOOLEAN(&nonblank, [-b][--number - nonblank][help = "number noempty output lines, overrides -n"]),
+        XBOX_ARG_BOOLEAN(NULL, [-A]["--show-all"][help = "equivalent to -vET"]),
+        XBOX_ARG_BOOLEAN(&nonblank, [-b]["--number-nonblank"][help = "number noempty output lines, overrides -n"]),
         XBOX_ARG_BOOLEAN(&show_end, [-e][name = e][help = "equivalent to -vE"]),
-        XBOX_ARG_BOOLEAN(&show_end, [-E][--show - ends][help = "display $ at end of each line"]),
+        XBOX_ARG_BOOLEAN(&show_end, [-E]["--show-ends"][help = "display $ at end of each line"]),
         XBOX_ARG_BOOLEAN(&show_number, [-n][--number][help = "number all output lines"]),
-        XBOX_ARG_BOOLEAN(&squeeze, [-s][--squeeze - blank][help = "suppress repeated empty output lines"]),
+        XBOX_ARG_BOOLEAN(&squeeze, [-s]["--squeeze-blank"][help = "suppress repeated empty output lines"]),
         XBOX_ARG_BOOLEAN(&show_tab, [-t][name = t][help = "equivalent to -vT"]),
         XBOX_ARG_BOOLEAN(&show_tab, [-T][name = bigt][help = "display TAB character as ^I"]),
         XBOX_ARG_BOOLEAN(NULL, [-u][name = u][help = (ignored)]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--show - nonprinting][help = "use ^ and M- notation, except for LFD and TAB"]),
+        XBOX_ARG_BOOLEAN(NULL, [-v]["--show-nonprinting"][help = "use ^ and M- notation, except for LFD and TAB"]),
         XBOX_ARG_BOOLEAN(NULL, [--version][help = "output version information and exit"]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_STICK | XBOX_ARGPARSE_ENABLE_EQUAL);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
     XBOX_argparse_describe(&parser,
                            "cat",
                            "Concateate FILE(s) to standard output.\n\nWith no FILE, or when FILE is -, read standard "

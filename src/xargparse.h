@@ -45,10 +45,10 @@ enum argparse_option_type {
 };
 
 enum argparse_flag {
-    XBOX_ARGPARSE_IGNORE_WARNING = 1,        // 忽略警告
-    XBOX_ARGPARSE_ENABLE_STICK = 1 << 1,     // 允许参数粘连 -O1 -Iinclude/
-    XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,     // 允许参数等号 -i=123
-    XBOX_ARGPARSE_ENABLE_MULTI = 1 << 3,     // 允许多个分离参数 -D __KERNEL__ -D __GNU__
+    XBOX_ARGPARSE_IGNORE_WARNING = 1,         // 忽略警告
+    XBOX_ARGPARSE_ENABLE_STICK = 1 << 1,      // 允许参数粘连 -O1 -Iinclude/
+    XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,      // 允许参数等号 -i=123
+    XBOX_ARGPARSE_ENABLE_MULTI = 1 << 3,      // 允许多个分离参数 -D __KERNEL__ -D __GNU__
     XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 4,  // 允许boolean类型参数粘连
     XBOX_ARGPARSE_DISABLE_SORT = 1 << 5
 };
@@ -270,8 +270,8 @@ int parse_optionstr(argparse_option *option) {
             match_flag = 0;
             char *argument;
             // 省略前后引号
-            if ((str[p] == str[i-1]) && ((str[p] == '\"' || str[i-1] == '\''))) {
-                argument = XBOX_splice(str, p+1, i - 2);
+            if ((str[p] == str[i - 1]) && ((str[p] == '\"' || str[i - 1] == '\''))) {
+                argument = XBOX_splice(str, p + 1, i - 2);
             } else {
                 argument = XBOX_splice(str, p, i - 1);
             }
@@ -590,7 +590,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         *(int *)option->p = value * signal;
         option->match = 1;
         return;
-    } 
+    }
     // 多个匹配的情况
     // -D __GNU__ -D __KERNEL
     int match_number = ++option->match;
@@ -670,6 +670,46 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                 option = check_argparse_soptions(parser, argv[i]);
             }
             if (option == NULL) {
+                if (parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) {
+                    int pos = XBOX_findChar(argv[i], '=');
+                    if (pos != -1 && pos == 2) {
+                        char *short_name = XBOX_splice(argv[i], 0, 1);
+                        option = check_argparse_soptions(parser, short_name);
+                        free(short_name);
+                        if (option) {
+                            char *value = XBOX_splice(argv[i], 3, -1);
+                            option->value = value;
+                            value_pass(parser, option);
+                            continue;
+                        }
+                    }
+                }
+
+                if (parser->flag & XBOX_ARGPARSE_ENABLE_STICK) {
+                    char *short_name = XBOX_splice(argv[i], 0, 1);
+                    option = check_argparse_soptions(parser, short_name);
+                    free(short_name);
+                    if (option) {
+                        // boolean 类型的不去判断粘连情况
+                        if (option->type == ARGPARSE_OPT_BOOLEAN) {
+                            continue;
+                        }
+                        // if (option->type == ARGPARSE_OPT_BOOLEAN && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+                        //     fprintf(stderr,
+                        //             "%s: Boolean argument [%s] is sticky in [%s], do you mean "
+                        //             "XBOX_ARGPARSE_ENABLE_ARG_STICK?\n",
+                        //             XBOX_ARGS_PARSE_ERROR,
+                        //             option->short_name,
+                        //             argv[i]);
+                        //     XBOX_free_argparse(parser);
+                        //     exit(XBOX_FORMAT_ERROR);
+                        // }
+                        char *value = XBOX_splice(argv[i], 2, -1);
+                        option->value = value;
+                        value_pass(parser, option);
+                        continue;
+                    }
+                }
                 if ((parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK) && argv[i][1] != '-') {
                     char s[3] = {'-', '0', '\0'};
                     int n = strlen(argv[i]);
@@ -700,41 +740,7 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                     }
                     continue;
                 }
-                if (parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) {
-                    int pos = XBOX_findChar(argv[i], '=');
-                    if (pos != -1 && pos == 2) {
-                        char *short_name = XBOX_splice(argv[i], 0, 1);
-                        option = check_argparse_soptions(parser, short_name);
-                        free(short_name);
-                        if (option) {
-                            char *value = XBOX_splice(argv[i], 3, -1);
-                            option->value = value;
-                            value_pass(parser, option);
-                            continue;
-                        }
-                    }
-                }
-                if (parser->flag & XBOX_ARGPARSE_ENABLE_STICK) {
-                    char *short_name = XBOX_splice(argv[i], 0, 1);
-                    option = check_argparse_soptions(parser, short_name);
-                    free(short_name);
-                    if (option) {
-                        if (option->type == ARGPARSE_OPT_BOOLEAN && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-                            fprintf(stderr,
-                                    "%s: Boolean argument [%s] is sticky in [%s], do you mean "
-                                    "XBOX_ARGPARSE_ENABLE_ARG_STICK?\n",
-                                    XBOX_ARGS_PARSE_ERROR,
-                                    option->short_name,
-                                    argv[i]);
-                            XBOX_free_argparse(parser);
-                            exit(XBOX_FORMAT_ERROR);
-                        }
-                        char *value = XBOX_splice(argv[i], 2, -1);
-                        option->value = value;
-                        value_pass(parser, option);
-                        continue;
-                    }
-                }
+
                 fprintf(stderr, "%s: no match options for [%s]\n", XBOX_ARGS_PARSE_ERROR, argv[i]);
                 XBOX_free_argparse(parser);
                 exit(XBOX_FORMAT_ERROR);
@@ -885,15 +891,15 @@ void check_valid_options(XBOX_argparse *parser) {
         }
     }
 
-    if (parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK &&
-        ((parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) || (parser->flag & XBOX_ARGPARSE_ENABLE_STICK))) {
-        fprintf(stderr,
-                "%s: flag collasp for XBOX_ARGPARSE_ENABLE_EQUAL with XBOX_ARGPARSE_ENABLE_EQUAL or "
-                "XBOX_ARGPARSE_ENABLE_STICK\n",
-                XBOX_ARGS_BUILD_ERROR);
-        XBOX_free_argparse(parser);
-        exit(XBOX_FORMAT_ERROR);
-    }
+    // if (parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK &&
+    //     ((parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) || (parser->flag & XBOX_ARGPARSE_ENABLE_STICK))) {
+    //     fprintf(stderr,
+    //             "%s: flag collasp for XBOX_ARGPARSE_ENABLE_EQUAL with XBOX_ARGPARSE_ENABLE_EQUAL or "
+    //             "XBOX_ARGPARSE_ENABLE_STICK\n",
+    //             XBOX_ARGS_BUILD_ERROR);
+    //     XBOX_free_argparse(parser);
+    //     exit(XBOX_FORMAT_ERROR);
+    // }
 }
 
 /**
@@ -942,19 +948,19 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
     return;
 }
 
-
 /**
  * @brief char **数组释放
- * 
- * @param files 
- * @param length 
+ *
+ * @param files
+ * @param length
  */
 void XBOX_free_args(char **files, int length) {
-    if (length == 0) return;
-    for (int i=0;i<length;i++) {
+    if (length == 0)
+        return;
+    for (int i = 0; i < length; i++) {
         free(files[i]);
     }
     free(files);
 }
 
-#endif // XBOX_XARGPARSE_H
+#endif  // XBOX_XARGPARSE_H
