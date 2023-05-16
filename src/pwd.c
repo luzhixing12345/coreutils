@@ -82,10 +82,14 @@ int main(int argc, const char **argv) {
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
+        XBOX_free_argparse(&parser);
+        return 0;
     }
 
     if (XBOX_ismatch(&parser, "version")) {
         printf("%s\n", XBOX_VERSION);
+        XBOX_free_argparse(&parser);
+        return 0;
     }
     XBOX_pwd();
     XBOX_free_argparse(&parser);

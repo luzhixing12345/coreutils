@@ -10,7 +10,7 @@
 #ifndef XBOX_XARGPARSE_H
 #define XBOX_XARGPARSE_H
 
-const char *XBOX_VERSION = "v0.0.1";
+const char *XBOX_VERSION = "XBOX v0.0.1";
 
 // #include <stdint.h>
 #include <ctype.h>
@@ -50,7 +50,7 @@ enum argparse_flag {
     XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,      // 允许参数等号 -i=123
     XBOX_ARGPARSE_ENABLE_MULTI = 1 << 3,      // 允许多个分离参数 -D __KERNEL__ -D __GNU__
     XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 4,  // 允许boolean类型参数粘连
-    XBOX_ARGPARSE_DISABLE_SORT = 1 << 5
+    XBOX_ARGPARSE_DISABLE_SORT = 1 << 5       // 不排序,按照默认顺序
 };
 
 typedef struct {

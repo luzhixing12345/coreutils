@@ -5,7 +5,6 @@
 #include <sys/vfs.h>
 #include <time.h>
 
-#include "xargparse.h"
 #include "xbox.h"
 
 char **dirs;
@@ -224,11 +223,14 @@ int main(int argc, const char **argv) {
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
     }
-    if (XBOX_ismatch(&parser, "version")) {
-        printf("%s\n",XBOX_VERSION);
-    }
 
     int n = XBOX_ismatch(&parser, "FILE");
+    if (XBOX_ismatch(&parser, "version")) {
+        printf("%s\n", XBOX_VERSION);
+        XBOX_free_args(dirs, n);
+        XBOX_free_argparse(&parser);
+        return 0;
+    }
     if (n) {
         for (int i = 0; i < n; i++) {
             XBOX_stat(dirs[i]);
