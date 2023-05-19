@@ -28,6 +28,7 @@
 #define XBOX_DIR_ALL 2
 
 #define XBOX_PRINT_BUFFER_SIZE 1024
+#define XBOX_MAX_INPUT_SIZE 1024
 
 #define XBOX_IS_DIR(dp) (dp->type == DT_DIR)
 
