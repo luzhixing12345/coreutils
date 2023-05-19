@@ -669,6 +669,7 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
             } else {
                 option = check_argparse_soptions(parser, argv[i]);
             }
+
             if (option == NULL) {
                 if (parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) {
                     int pos = XBOX_findChar(argv[i], '=');
@@ -684,14 +685,16 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         }
                     }
                 }
-
                 if (parser->flag & XBOX_ARGPARSE_ENABLE_STICK) {
                     char *short_name = XBOX_splice(argv[i], 0, 1);
                     option = check_argparse_soptions(parser, short_name);
                     free(short_name);
                     if (option) {
                         // boolean 类型的不去判断粘连情况
-                        if (option->type == ARGPARSE_OPT_BOOLEAN) {
+                        if (option->type != ARGPARSE_OPT_BOOLEAN) {
+                            char *value = XBOX_splice(argv[i], 2, -1);
+                            option->value = value;
+                            value_pass(parser, option);
                             continue;
                         }
                         // if (option->type == ARGPARSE_OPT_BOOLEAN && !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
@@ -704,10 +707,6 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         //     XBOX_free_argparse(parser);
                         //     exit(XBOX_FORMAT_ERROR);
                         // }
-                        char *value = XBOX_splice(argv[i], 2, -1);
-                        option->value = value;
-                        value_pass(parser, option);
-                        continue;
                     }
                 }
                 if ((parser->flag & XBOX_ARGPARSE_ENABLE_ARG_STICK) && argv[i][1] != '-') {

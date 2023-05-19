@@ -1,5 +1,6 @@
 #include "xargparse.h"
 #include "xbox.h"
+#include "xutils.h"
 
 static char **directories = NULL;
 static int all_files = 0;
@@ -22,13 +23,6 @@ static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
     XBOX_File **dp2 = (XBOX_File **)p2;
     if (reverse_sort) {
-        // 对于不展示隐藏文件的情况把这些文件置顶
-        if (!all_files) {
-            if ((*dp1)->name[0] == '.')
-                return 0;
-            if ((*dp2)->name[0] == '.')
-                return 1;
-        }
         return strcmp((*dp2)->name, (*dp1)->name);
     } else {
         return strcmp((*dp1)->name, (*dp2)->name);
@@ -38,6 +32,35 @@ static int sort_cmp(const void *p1, const void *p2) {
 void XBOX_tree(XBOX_Dir *dir) {
     if (!unsort) {
         qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
+    }
+    // 找到最后一个元素, 作为 tree 的结尾
+    int last_index = -1;
+    if (!directory_only) {
+        if (all_files) {
+            last_index = dir->count - 1;
+        } else {
+            // 找到第一个不是 . 开头的文件
+            for (int i = dir->count - 1; i >= 0; i--) {
+                if (dir->dp[i]->name[0] != '.') {
+                    last_index = i;
+                    break;
+                }
+            }
+        }
+    } else {
+        for (int i = dir->count - 1; i >= 0; i--) {
+            if (XBOX_IS_DIR(dir->dp[i])) {
+                if (all_files) {
+                    last_index = i;
+                    break;
+                } else {
+                    if (dir->dp[i]->name[0] != '.') {
+                        last_index = i;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     int depth = 0;  // 目录深度
@@ -56,7 +79,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             temp = temp->parent;
         }
     } else {
-        printf("%s\n",XBOX_colorprint(dir->name, dir->name));
+        printf("%s\n", XBOX_colorprint(dir->name, dir->name));
     }
     // 深度 -L
     if (level > 0 && depth >= level) {
@@ -88,7 +111,7 @@ void XBOX_tree(XBOX_Dir *dir) {
                     printf("    ");
                 }
             }
-            printf("%s%s ", i == dir->count - 1 ? file_end : file_mid, file_item);
+            printf("%s%s ", i == last_index ? file_end : file_mid, file_item);
             if (no_color) {
                 printf("%s\n", XBOX_get_last_path(dir->name));
             } else {
@@ -101,7 +124,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             char *sub_dir_name = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
             XBOX_Dir *sub_dir = XBOX_open_dir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
             sub_dir->parent = dir;
-            sub_dir->is_last = i == dir->count - 1;
+            sub_dir->is_last = i == last_index;
             XBOX_tree(sub_dir);
         } else {
             if (directory_only) {
@@ -114,11 +137,11 @@ void XBOX_tree(XBOX_Dir *dir) {
                     printf("    ");
                 }
             }
-            printf("%s%s ", i == dir->count - 1 ? file_end : file_mid, file_item);
+            printf("%s%s ", i == last_index ? file_end : file_mid, file_item);
             if (no_color) {
                 printf("%s", dir->dp[i]->name);
             } else {
-                printf("%s",XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
+                printf("%s", XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
             }
             printf("\n");
         }
@@ -140,11 +163,12 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&unsort, [-U][name = "unsort"][help = "Leave files unsorted."]),
         XBOX_ARG_BOOLEAN(&reverse_sort, [-r][name = "reverse"][help = "Reverse the order of the sort."]),
         XBOX_ARG_INT(&level, [-L][name = "level"][help = "Descend only level directories deep."]),
-        XBOX_ARG_BOOLEAN(&full_name, [-f][name="full-name"][help="Print the full path prefix for each file."]),
+        XBOX_ARG_BOOLEAN(&full_name, [-f][name = "full-name"][help = "Print the full path prefix for each file."]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK|XBOX_ARGPARSE_ENABLE_EQUAL|XBOX_ARGPARSE_ENABLE_STICK);
+    XBOX_argparse_init(
+        &parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK | XBOX_ARGPARSE_ENABLE_EQUAL | XBOX_ARGPARSE_ENABLE_STICK);
     XBOX_argparse_describe(&parser, "tree", "list the directory in tree format", "");
     XBOX_argparse_parse(&parser, argc, argv);
 
@@ -174,7 +198,7 @@ int main(int argc, const char **argv) {
 
     if (n) {
         for (int i = 0; i < n; i++) {
-            XBOX_Dir *directory = XBOX_open_dir(directories[i],XBOX_DIR_IGNORE_CURRENT);
+            XBOX_Dir *directory = XBOX_open_dir(directories[i], XBOX_DIR_IGNORE_CURRENT);
             directory->parent = NULL;
             XBOX_tree(directory);
             printf("\n%d directories", dir_count);
@@ -185,7 +209,7 @@ int main(int argc, const char **argv) {
         }
     } else {
         char *dir_name = ".";
-        XBOX_Dir *directory = XBOX_open_dir(dir_name,XBOX_DIR_IGNORE_CURRENT);
+        XBOX_Dir *directory = XBOX_open_dir(dir_name, XBOX_DIR_IGNORE_CURRENT);
         directory->parent = NULL;
         XBOX_tree(directory);
         printf("\n%d directories", dir_count);

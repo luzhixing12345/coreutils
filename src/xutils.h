@@ -33,18 +33,18 @@
 #define XBOX_IS_DIR(dp) (dp->type == DT_DIR)
 
 typedef struct XBOX_File {
-    unsigned char type;
-    char name[256];
+    unsigned char type;       // 文件类型
+    char name[256];           // 文件名
 } XBOX_File;
 
 typedef struct XBOX_Dir {
-    struct XBOX_Dir* parent;  // 父目录
-    int is_last;              // 是否是父目录的最后一个
     char name[256];
     int count;    // 目录+文件数量
     int d_count;  // 目录数量
     int f_count;  // 文件数量
     XBOX_File** dp;
+    struct XBOX_Dir* parent;  // 父目录
+    int is_last;
 } XBOX_Dir;
 
 /**
