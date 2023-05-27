@@ -25,11 +25,14 @@ const char *XBOX_VERSION = "XBOX v0.0.1";
 #define XBOX_REQUIRE_ARGUMENT 67
 #define XBOX_FORMAT_ERROR 68
 
-#define XBOX_MAX_LENGTH_BIAS 5
+#define XBOX_MAX_LENGTH_BIAS 4
 
 #define XBOX_ARGS_BUILD_ERROR "[Args Build Error]"
 #define XBOX_ARGS_PARSE_ERROR "[Args Parse Error]"
 #define XBOX_ARGS_PARSE_WARNING "[Args Parse Warning]"
+
+#define XBOX_ARGS_NEED_FREE(type) \
+    (!((type == ARGPARSE_OPT_BOOLEAN) || (type == ARGPARSE_OPT_INT) || (type == ARGPARSE_OPT_INT_GROUP)))
 
 enum argparse_option_type {
     ARGPARSE_OPT_END,
@@ -37,31 +40,34 @@ enum argparse_option_type {
     // 匹配单个参数
     ARGPARSE_OPT_INT,
     ARGPARSE_OPT_STR,
+    // 匹配组
     ARGPARSE_OPT_INT_GROUP,
     ARGPARSE_OPT_STR_GROUP,
     // 匹配多个参数
-    ARGPARSE_OPT_INT_GROUPS,
-    ARGPARSE_OPT_STR_GROUPS
+    ARGPARSE_OPT_INTS,
+    ARGPARSE_OPT_STRS,
+    ARGPARSE_OPT_INTS_GROUP,
+    ARGPARSE_OPT_STRS_GROUP
 };
 
 enum argparse_flag {
     XBOX_ARGPARSE_IGNORE_WARNING = 1,         // 忽略警告
     XBOX_ARGPARSE_ENABLE_STICK = 1 << 1,      // 允许参数粘连 -O1 -Iinclude/
     XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,      // 允许参数等号 -i=123
-    XBOX_ARGPARSE_ENABLE_MULTI = 1 << 3,      // 允许多个分离参数 -D __KERNEL__ -D __GNU__
-    XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 4,  // 允许boolean类型参数粘连
-    XBOX_ARGPARSE_DISABLE_SORT = 1 << 5       // 不排序,按照默认顺序
+    XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 3,  // 允许boolean类型参数粘连
+    XBOX_ARGPARSE_SORT = 1 << 4               // 将参数按照字典序排序
 };
 
 typedef struct {
     enum argparse_option_type type;
     void *p;
     char *argument_str;
-    char *short_name;
-    char *long_name;
-    char *name;
-    char *help_info;
+    char *short_name;  // 短名字
+    char *long_name;   // 长名字
+    char *name;        // 记录用的名字
+    char *help_info;   // 帮助信息
     char *value;
+    char *append_info;  // 补充信息
     int match;
 } argparse_option;
 
@@ -85,16 +91,25 @@ typedef struct {
     { ARGPARSE_OPT_INT, a, #options }
 #define XBOX_ARG_STR(a, options) \
     { ARGPARSE_OPT_STR, a, #options }
+#define XBOX_ARG_INTS(a, options) \
+    { ARGPARSE_OPT_INTS, a, #options }
+#define XBOX_ARG_STRS(a, options) \
+    { ARGPARSE_OPT_STRS, a, #options }
 #define XBOX_ARG_INT_GROUP(a, options) \
     { ARGPARSE_OPT_INT_GROUP, a, #options }
-#define XBOX_ARG_INT_GROUPS(a, options) \
-    { ARGPARSE_OPT_INT_GROUPS, a, #options }
+#define XBOX_ARG_INTS_GROUP(a, options) \
+    { ARGPARSE_OPT_INTS_GROUP, a, #options }
 #define XBOX_ARG_STR_GROUP(a, options) \
     { ARGPARSE_OPT_STR_GROUP, a, #options }
-#define XBOX_ARG_STR_GROUPS(a, options) \
-    { ARGPARSE_OPT_STR_GROUPS, a, #options }
+#define XBOX_ARG_STRS_GROUP(a, options) \
+    { ARGPARSE_OPT_STRS_GROUP, a, #options }
 #define XBOX_ARG_END() \
     { ARGPARSE_OPT_END }
+
+void XBOX_free_argparse(XBOX_argparse *parser);
+void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int flag);
+void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char *description, const char *epilog);
+void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv);
 
 /**
  * @brief (原地操作)去除字符串开头结尾的的空格和双引号 ""
@@ -105,11 +120,17 @@ typedef struct {
 void XBOX_trim(char **str_p) {
     char *new_str;
     char *str = *str_p;
-    while (*str == ' ' || *str == '\"') {
+    while (*str == ' ') {
+        str++;
+    }
+    if (*str == '\"') {
         str++;
     }
     int length = strlen(str);
-    while (str[length - 1] == ' ' || str[length - 1] == '\"') {
+    while (str[length - 1] == ' ') {
+        length--;
+    }
+    if (str[length - 1] == '\"') {
         length--;
     }
     new_str = (char *)malloc(length + 1);
@@ -179,6 +200,7 @@ void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int fla
         option->name = NULL;
         option->help_info = NULL;
         option->value = NULL;
+        option->append_info = NULL;
         option->match = 0;
         // printf("pointer %d: %p\n",i,parser->options[i].p);
     }
@@ -204,34 +226,6 @@ void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char 
     }
     parser->epilog = epilog;
     return;
-}
-
-/**
- * @brief 释放 parser 的内存, 请在程序结束/不再使用 parser 时调用
- *
- * @param parser
- */
-void XBOX_free_argparse(XBOX_argparse *parser) {
-    // fprintf(stderr, "argument parse error, free options\n");
-    for (int i = 0; i < parser->args_number; i++) {
-        argparse_option *option = &(parser->options[i]);
-        if (option->short_name) {
-            free(option->short_name);
-        }
-        if (option->long_name) {
-            free(option->long_name);
-        }
-        if (option->name) {
-            free(option->name);
-        }
-        if (option->help_info) {
-            free(option->help_info);
-        }
-        if (option->value) {
-            free(option->value);
-        }
-    }
-    // fprintf(stderr, "finished free options\n");
 }
 
 /**
@@ -332,6 +326,8 @@ int parse_optionstr(argparse_option *option) {
                     option->help_info = value;
                 } else if (!strcmp(key, "name")) {
                     option->name = value;
+                } else if (!strcmp(key, "append")) {
+                    option->append_info = value;
                 } else {
                     fprintf(stderr, "%s: unsupported argument [%s=%s] in %s\n", XBOX_ARGS_BUILD_ERROR, key, value, str);
                     free(key);
@@ -405,7 +401,7 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_STR_GROUP || option->type == ARGPARSE_OPT_INT_GROUP ||
-            option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
+            option->type == ARGPARSE_OPT_STRS_GROUP || option->type == ARGPARSE_OPT_INTS_GROUP) {
             counter++;
         }
     }
@@ -416,7 +412,7 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_STR_GROUP || option->type == ARGPARSE_OPT_INT_GROUP) {
             printf("[%s] ", option->name);
-        } else if (option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
+        } else if (option->type == ARGPARSE_OPT_STRS_GROUP || option->type == ARGPARSE_OPT_INTS_GROUP) {
             printf("[%s]... ", option->name);
         }
     }
@@ -426,35 +422,48 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     }
     printf("\n");
 
-    int max_length = 0;
+    int left_width = 0;
+    int mid_width = 0;
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
-        max_length = MAX(max_length, strlen(option->name));
+        if (option->short_name && option->append_info) {
+            left_width = MAX(left_width, strlen(option->append_info));
+        }
+        if (option->long_name) {
+            int option_length = strlen(option->long_name);
+            if (!option->short_name && option->append_info) {
+                option_length += strlen(option->append_info);
+            }
+            mid_width = MAX(mid_width, option_length);
+        }
     }
     // printf("max_length = %d\n",max_length);
-    max_length += XBOX_MAX_LENGTH_BIAS;
+    left_width += XBOX_MAX_LENGTH_BIAS;
+    mid_width += XBOX_MAX_LENGTH_BIAS;
 
-    // 考虑要不要加一个 flags...
-    if (!(parser->flag & XBOX_ARGPARSE_DISABLE_SORT)) {
+    if ((parser->flag & XBOX_ARGPARSE_SORT)) {
         qsort(parser->options, parser->args_number, sizeof(argparse_option), option_cmp);
     }
 
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
-            option->type == ARGPARSE_OPT_STR_GROUPS || option->type == ARGPARSE_OPT_INT_GROUPS) {
+            option->type == ARGPARSE_OPT_STRS_GROUP || option->type == ARGPARSE_OPT_INTS_GROUP) {
             continue;
         }
-        if (option->short_name) {
-            printf("  %s", option->short_name);
-        }
-        printf("\t");
 
+        printf("  %s", option->short_name == NULL ? "  " : option->short_name);
+        printf("%-*s", left_width, option->append_info == NULL ? "" : option->append_info);
+        int mid_rest_space = mid_width;
         if (option->long_name) {
-            printf("%-*s", max_length, option->long_name);
-        } else {
-            printf("%-*s", max_length, "");
+            printf("%s",option->long_name);
+            mid_rest_space -= strlen(option->long_name);
+            if (!option->short_name && option->append_info) {
+                printf("%s",option->append_info);
+                mid_rest_space-=strlen(option->append_info);
+            }
         }
+        printf("%*s",mid_rest_space,"");
 
         if (option->help_info) {
             printf("%s", option->help_info);
@@ -477,7 +486,7 @@ argparse_option *check_argparse_loptions(XBOX_argparse *parser, const char *str)
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
-            option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
+            option->type == ARGPARSE_OPT_INTS_GROUP || option->type == ARGPARSE_OPT_STRS_GROUP) {
             continue;
         }
         if (option->long_name && !strcmp(option->long_name, str)) {
@@ -498,7 +507,7 @@ argparse_option *check_argparse_soptions(XBOX_argparse *parser, const char *str)
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == ARGPARSE_OPT_INT_GROUP || option->type == ARGPARSE_OPT_STR_GROUP ||
-            option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
+            option->type == ARGPARSE_OPT_INTS_GROUP || option->type == ARGPARSE_OPT_STRS_GROUP) {
             continue;
         }
         if (option->short_name && !strcmp(option->short_name, str)) {
@@ -532,7 +541,7 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
                 return 0;
             }
         }
-        if (option->type == ARGPARSE_OPT_INT_GROUPS || option->type == ARGPARSE_OPT_STR_GROUPS) {
+        if (option->type == ARGPARSE_OPT_INTS_GROUP || option->type == ARGPARSE_OPT_STRS_GROUP) {
             if (option->value) {
                 free(option->value);
             }
@@ -553,24 +562,20 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
  * @param enable_multi 是否允许多个分离参数
  */
 void value_pass(XBOX_argparse *parser, argparse_option *option) {
-    int enable_multi = parser->flag & XBOX_ARGPARSE_ENABLE_MULTI;
     // 警告信息, 覆盖
-    if (!enable_multi && option->match && (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_INT) &&
+    if (option->match && (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_INT) &&
         !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-        fprintf(stderr,
-                "%s: multi argument detected for [%s], covered by [%s]\n",
-                XBOX_ARGS_PARSE_WARNING,
-                option->name,
-                option->value);
+        fprintf(stderr, "%s: ignore argument [%s] for [%s]\n", XBOX_ARGS_PARSE_WARNING, option->value, option->name);
+        return;
     }
 
-    // 不允许多个
-    if ((!enable_multi && option->type == ARGPARSE_OPT_STR) || option->type == ARGPARSE_OPT_STR_GROUP) {
-        *(char **)option->p = (char *)malloc(strlen(option->value));
+    // 单个匹配
+    if ((option->type == ARGPARSE_OPT_STR) || option->type == ARGPARSE_OPT_STR_GROUP) {
+        *(char **)option->p = (char *)malloc(strlen(option->value) + 1);
         strcpy(*(char **)option->p, option->value);
         option->match = 1;
         return;
-    } else if ((!enable_multi && option->type == ARGPARSE_OPT_INT) || option->type == ARGPARSE_OPT_INT_GROUP) {
+    } else if ((option->type == ARGPARSE_OPT_INT) || option->type == ARGPARSE_OPT_INT_GROUP) {
         int value = 0;
         int signal = 1;
         char *temp = option->value;
@@ -594,7 +599,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
     // 多个匹配的情况
     // -D __GNU__ -D __KERNEL
     int match_number = ++option->match;
-    if (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_STR_GROUPS) {
+    if (option->type == ARGPARSE_OPT_STRS || option->type == ARGPARSE_OPT_STRS_GROUP) {
         char **new_p;
         if (match_number == 1) {
             new_p = (char **)realloc(NULL, sizeof(char *) * match_number);
@@ -605,7 +610,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         char *value_str = XBOX_splice(option->value, 0, -1);
         (*(char ***)option->p)[match_number - 1] = value_str;
 
-    } else if (option->type == ARGPARSE_OPT_INT || option->type == ARGPARSE_OPT_INT_GROUPS) {
+    } else if (option->type == ARGPARSE_OPT_INTS || option->type == ARGPARSE_OPT_INTS_GROUP) {
         int value = 0;
         int signal = 1;
         char *temp = option->value;
@@ -630,27 +635,6 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
         }
         (*(int **)option->p) = new_p;
         (*(int **)option->p)[match_number - 1] = value * signal;
-    } else if (option->type == ARGPARSE_OPT_STR_GROUP) {
-        *(char **)option->p = (char *)malloc(strlen(option->value));
-        strcpy(*(char **)option->p, option->value);
-    } else if (option->type == ARGPARSE_OPT_INT_GROUP) {
-        int value = 0;
-        char *temp = option->value;
-        int signal = 1;
-        if (*temp == '-') {
-            signal = -1;
-            temp++;
-        }
-        while (*temp != '\0') {
-            if (*temp < '0' || *temp > '9') {
-                fprintf(stderr, "%s: argument assign to be int but get [%s]\n", XBOX_ARGS_PARSE_ERROR, option->value);
-                XBOX_free_argparse(parser);
-                exit(XBOX_FORMAT_ERROR);
-            }
-            value = value * 10 + (*temp) - '0';
-            temp++;
-        }
-        *(int *)option->p = value * signal;
     } else {
         fprintf(stderr, "%s: unknown option type for [%s]\n", XBOX_ARGS_PARSE_ERROR, option->name);
         XBOX_free_argparse(parser);
@@ -678,6 +662,9 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                         option = check_argparse_soptions(parser, short_name);
                         free(short_name);
                         if (option) {
+                            if (option->value) {
+                                free(option->value);
+                            }
                             char *value = XBOX_splice(argv[i], 3, -1);
                             option->value = value;
                             value_pass(parser, option);
@@ -692,6 +679,9 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
                     if (option) {
                         // boolean 类型的不去判断粘连情况
                         if (option->type != ARGPARSE_OPT_BOOLEAN) {
+                            if (option->value) {
+                                free(option->value);
+                            }
                             char *value = XBOX_splice(argv[i], 2, -1);
                             option->value = value;
                             value_pass(parser, option);
@@ -779,7 +769,7 @@ void argparse_parse_argv(XBOX_argparse *parser, int argc, const char **argv) {
 
         // 当作正常参数传入
         if (check_argparse_groups(parser, argv[i])) {
-            if (!(parser->flag & XBOX_ARGPARSE_ENABLE_MULTI || parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+            if (!(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
                 fprintf(stderr, "%s: [%s] doesn't match any left group\n", XBOX_ARGS_PARSE_WARNING, argv[i]);
             }
         }
@@ -948,18 +938,47 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
 }
 
 /**
- * @brief char **数组释放
+ * @brief 释放 parser 的内存, 请在程序结束/不再使用 parser 时调用
  *
- * @param files
- * @param length
+ * @param parser
  */
-void XBOX_free_args(char **files, int length) {
-    if (length == 0)
-        return;
-    for (int i = 0; i < length; i++) {
-        free(files[i]);
+void XBOX_free_argparse(XBOX_argparse *parser) {
+    // fprintf(stderr, "argument parse error, free options\n");
+    for (int i = 0; i < parser->args_number; i++) {
+        argparse_option *option = &(parser->options[i]);
+        if (option->short_name) {
+            free(option->short_name);
+        }
+        if (option->long_name) {
+            free(option->long_name);
+        }
+        if (option->name) {
+            free(option->name);
+        }
+        if (option->help_info) {
+            free(option->help_info);
+        }
+        if (option->value) {
+            free(option->value);
+        }
+        if (option->append_info) {
+            free(option->append_info);
+        }
+        if (XBOX_ARGS_NEED_FREE(option->type) && option->match) {
+            if (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_STR_GROUP) {
+                free(*(char **)option->p);
+            } else if (option->type == ARGPARSE_OPT_INTS || option->type == ARGPARSE_OPT_INTS_GROUP) {
+                free(*(int **)option->p);
+            } else {
+                for (int i = 0; i < option->match; i++) {
+                    free((*(char ***)option->p)[i]);
+                }
+                free(*(char ***)option->p);
+            }
+        }
     }
-    free(files);
+
+    // fprintf(stderr, "finished free options\n");
 }
 
 #endif  // XBOX_XARGPARSE_H
