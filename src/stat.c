@@ -204,7 +204,7 @@ void XBOX_stat(const char *name) {
 int main(int argc, const char **argv) {
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_STR_GROUPS(&dirs, [name = FILE]),
+        XBOX_ARG_STRS(&dirs, [name = FILE]),
         XBOX_ARG_BOOLEAN(&dereference, [-L][--dereference][help = "follow links"]),
         XBOX_ARG_BOOLEAN(&file_system,
                          [-f]["--file-system"][help = "display file system status instead of file status"]),
@@ -227,7 +227,6 @@ int main(int argc, const char **argv) {
     int n = XBOX_ismatch(&parser, "FILE");
     if (XBOX_ismatch(&parser, "version")) {
         printf("%s\n", XBOX_VERSION);
-        XBOX_free_args(dirs, n);
         XBOX_free_argparse(&parser);
         return 0;
     }
@@ -239,7 +238,6 @@ int main(int argc, const char **argv) {
         XBOX_argparse_info(&parser);
     }
 
-    XBOX_free_args(dirs, n);
     XBOX_free_argparse(&parser);
     return 0;
 }

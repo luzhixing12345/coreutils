@@ -202,7 +202,7 @@ int main(int argc, const char **argv) {
                                  XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_MULTI | XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options,  XBOX_ARGPARSE_ENABLE_ARG_STICK);
     XBOX_argparse_describe(&parser, "pwd", "Print the name of the current working directory", "");
     XBOX_argparse_parse(&parser, argc, argv);
 

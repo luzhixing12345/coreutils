@@ -157,7 +157,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&directory_only, [-d][name = "only directory"][help = "List directories only."]),
         XBOX_ARG_BOOLEAN(&current_directory_only,
                          [-x][name = "current-dir"][help = "Stay on current filesystem only."]),
-        XBOX_ARG_STR_GROUPS(&directories, [name = directory]),
+        XBOX_ARG_STRS_GROUP(&directories, [name = directory]),
         XBOX_ARG_BOOLEAN(&no_color, [-n][name = "no-color"][help = "Turn colorization off always (-C overrides)."]),
         XBOX_ARG_BOOLEAN(NULL, [-C][name = "has-color"][help = "Turn colorization on always."]),
         XBOX_ARG_BOOLEAN(&unsort, [-U][name = "unsort"][help = "Leave files unsorted."]),
@@ -190,7 +190,6 @@ int main(int argc, const char **argv) {
     if (XBOX_ismatch(&parser, "level")) {
         if (level <= 0) {
             printf("tree: Invalid level, must be greater than 0.\n");
-            XBOX_free_args(directories, n);
             XBOX_free_argparse(&parser);
             return 1;
         }
@@ -219,7 +218,6 @@ int main(int argc, const char **argv) {
         printf("\n");
     }
 
-    XBOX_free_args(directories, n);
     XBOX_free_argparse(&parser);
     return 0;
 }

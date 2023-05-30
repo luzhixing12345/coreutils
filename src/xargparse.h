@@ -25,7 +25,7 @@ const char *XBOX_VERSION = "XBOX v0.0.1";
 #define XBOX_REQUIRE_ARGUMENT 67
 #define XBOX_FORMAT_ERROR 68
 
-#define XBOX_MAX_LENGTH_BIAS 4
+#define XBOX_MAX_LENGTH_BIAS 3
 
 #define XBOX_ARGS_BUILD_ERROR "[Args Build Error]"
 #define XBOX_ARGS_PARSE_ERROR "[Args Parse Error]"
@@ -106,10 +106,50 @@ typedef struct {
 #define XBOX_ARG_END() \
     { ARGPARSE_OPT_END }
 
-void XBOX_free_argparse(XBOX_argparse *parser);
-void XBOX_argparse_init(XBOX_argparse *parser, argparse_option *options, int flag);
-void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char *description, const char *epilog);
-void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv);
+/**
+ * @brief 释放 parser 的内存, 请在程序结束/不再使用 parser 时调用
+ *
+ * @param parser
+ */
+void XBOX_free_argparse(XBOX_argparse *parser) {
+    // fprintf(stderr, "argument parse error, free options\n");
+    for (int i = 0; i < parser->args_number; i++) {
+        argparse_option *option = &(parser->options[i]);
+        if (option->short_name) {
+            free(option->short_name);
+        }
+        if (option->long_name) {
+            free(option->long_name);
+        }
+        if (option->name) {
+            free(option->name);
+        }
+        if (option->help_info) {
+            free(option->help_info);
+        }
+        if (option->value) {
+            free(option->value);
+        }
+        if (option->append_info) {
+            free(option->append_info);
+        }
+        if (XBOX_ARGS_NEED_FREE(option->type) && option->match) {
+            if (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_STR_GROUP) {
+                free(*(char **)option->p);
+            } else if (option->type == ARGPARSE_OPT_INTS || option->type == ARGPARSE_OPT_INTS_GROUP) {
+                free(*(int **)option->p);
+            } else {
+                for (int i = 0; i < option->match; i++) {
+                    free((*(char ***)option->p)[i]);
+                }
+                free(*(char ***)option->p);
+            }
+        }
+    }
+
+    // fprintf(stderr, "finished free options\n");
+}
+
 
 /**
  * @brief (原地操作)去除字符串开头结尾的的空格和双引号 ""
@@ -453,7 +493,7 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         }
 
         printf("  %s", option->short_name == NULL ? "  " : option->short_name);
-        printf("%-*s", left_width, option->append_info == NULL ? "" : option->append_info);
+        printf("%-*s", left_width, (option->append_info == NULL || !option->short_name) ? "" : option->append_info);
         int mid_rest_space = mid_width;
         if (option->long_name) {
             printf("%s",option->long_name);
@@ -937,48 +977,5 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
     return;
 }
 
-/**
- * @brief 释放 parser 的内存, 请在程序结束/不再使用 parser 时调用
- *
- * @param parser
- */
-void XBOX_free_argparse(XBOX_argparse *parser) {
-    // fprintf(stderr, "argument parse error, free options\n");
-    for (int i = 0; i < parser->args_number; i++) {
-        argparse_option *option = &(parser->options[i]);
-        if (option->short_name) {
-            free(option->short_name);
-        }
-        if (option->long_name) {
-            free(option->long_name);
-        }
-        if (option->name) {
-            free(option->name);
-        }
-        if (option->help_info) {
-            free(option->help_info);
-        }
-        if (option->value) {
-            free(option->value);
-        }
-        if (option->append_info) {
-            free(option->append_info);
-        }
-        if (XBOX_ARGS_NEED_FREE(option->type) && option->match) {
-            if (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_STR_GROUP) {
-                free(*(char **)option->p);
-            } else if (option->type == ARGPARSE_OPT_INTS || option->type == ARGPARSE_OPT_INTS_GROUP) {
-                free(*(int **)option->p);
-            } else {
-                for (int i = 0; i < option->match; i++) {
-                    free((*(char ***)option->p)[i]);
-                }
-                free(*(char ***)option->p);
-            }
-        }
-    }
-
-    // fprintf(stderr, "finished free options\n");
-}
 
 #endif  // XBOX_XARGPARSE_H

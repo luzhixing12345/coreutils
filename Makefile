@@ -62,7 +62,8 @@ clean_all:
 	$(MAKE) clean
 
 lib: $(obj)
-	@ar rsv lib$(TARGET).a $(obj)
+	ar rsv lib$(TARGET).a $(OBJ)
+	$(CC) -shared -o lib$(TARGET).so $(OBJ)
 
 release:
 	$(MAKE) lib

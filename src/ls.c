@@ -226,7 +226,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&long_list, [-l][name = "long-list"][help = "use a long listing format"]),
         XBOX_ARG_BOOLEAN(&almost_all, [-A][name="almost-all"][help="do not list implied . and .."]),
         XBOX_ARG_BOOLEAN(NULL, [--version][help="show version"]),
-        XBOX_ARG_STR_GROUPS(&dirs, [name = src][help = "source"]),
+        XBOX_ARG_STRS_GROUP(&dirs, [name = src][help = "source"]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
@@ -250,13 +250,11 @@ int main(int argc, const char **argv) {
     struct winsize terminal_size;
     if (!isatty(1)) {
         printf("1 is not a tty\n");
-        XBOX_free_args(dirs, n);
         XBOX_free_argparse(&parser);
         exit(1);
     }
     if (ioctl(1, TIOCGWINSZ, &terminal_size) < 0) {
         perror("ioctl");
-        XBOX_free_args(dirs, n);
         XBOX_free_argparse(&parser);
         exit(1);
     }
@@ -269,7 +267,6 @@ int main(int argc, const char **argv) {
     } else {
         XBOX_ls(".");
     }
-    XBOX_free_args(dirs, n);
     XBOX_free_argparse(&parser);
     return 0;
 }

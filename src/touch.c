@@ -54,7 +54,7 @@ int main(int argc, const char **argv) {
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
         XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
-        XBOX_ARG_STR_GROUPS(&files, [name = FILE]),
+        XBOX_ARG_STRS_GROUP(&files, [name = FILE]),
         XBOX_ARG_BOOLEAN(&only_access, [-a][name = "only-access"][help = "change only the access time"]),
         XBOX_ARG_BOOLEAN(&donot_create, [-c][--no-create][help="do not create any files"]),
         XBOX_ARG_END()};
@@ -69,14 +69,12 @@ int main(int argc, const char **argv) {
 
     if (XBOX_ismatch(&parser, "help")) {
         XBOX_argparse_info(&parser);
-        XBOX_free_args(files, n);
         XBOX_free_argparse(&parser);
         return 0;
     }
 
     if (XBOX_ismatch(&parser, "version")) {
         printf("%s\n", XBOX_VERSION);
-        XBOX_free_args(files, n);
         XBOX_free_argparse(&parser);
         return 0;
     }
@@ -88,7 +86,6 @@ int main(int argc, const char **argv) {
         XBOX_argparse_info(&parser);
     }
 
-    XBOX_free_args(files, n);
     XBOX_free_argparse(&parser);
     return 0;
 }

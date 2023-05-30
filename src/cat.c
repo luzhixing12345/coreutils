@@ -108,7 +108,7 @@ void XBOX_cat(const char *file_name) {
 int main(int argc, char const *argv[]) {
     argparse_option options[] = {
         XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_STR_GROUPS(&files, [name = FILE][help = "source"]),
+        XBOX_ARG_STRS_GROUP(&files, [name = FILE][help = "source"]),
         XBOX_ARG_BOOLEAN(NULL, [-A]["--show-all"][help = "equivalent to -vET"]),
         XBOX_ARG_BOOLEAN(&nonblank, [-b]["--number-nonblank"][help = "number noempty output lines, overrides -n"]),
         XBOX_ARG_BOOLEAN(&show_end, [-e][name = e][help = "equivalent to -vE"]),
@@ -156,7 +156,6 @@ int main(int argc, char const *argv[]) {
             XBOX_cat(files[i]);
         }
     }
-    XBOX_free_args(files, n);
     XBOX_free_argparse(&parser);
     return 0;
 }
