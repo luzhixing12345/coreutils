@@ -1,8 +1,8 @@
 # xbox
 
-xbox 是一个 [busybox](https://busybox.net/) 的实现, 集成了许多标准 Unix 工具的功能
+xbox 是一个 GNU coreutils 的实现
 
-xbox 是一个轻量级的 Unix 命令行程序的函数库, 可以实现命令的 C 函数级调用
+xbox 是一个轻量级的 Unix 命令行程序的函数库, 可以实现 C 函数级调用
 
 xbox 是一个轻量级的基础 C 库, 包括命令行参数处理和字符串处理
 
@@ -14,7 +14,7 @@ xbox 是一个轻量级的基础 C 库, 包括命令行参数处理和字符串�
 make
 ```
 
-安装: 意味着将以高优先级使用 xbox 编译得到的程序而非默认 Linux 程序
+安装: 意味着将以高优先级使用 xbox 编译得到的程序
 
 ```bash
 sudo make install
