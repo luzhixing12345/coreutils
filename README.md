@@ -57,9 +57,9 @@ main: main.c
 
 ## 文档
 
-关于如何使用 xbox 的 Linux 工具请参考 [工具文档](https://luzhixing12345.github.io/xbox)
+关于如何使用 xbox 的 Linux 工具请参考 [工具文档](https://luzhixing12345.github.io/coreutils)
 
-关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/xbox)
+关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/coreutils)
 
 [busybox源码构建]()
 
