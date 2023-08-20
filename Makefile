@@ -1,7 +1,7 @@
 
 
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -Wunused -Werror -Wformat-security
 TARGET = xbox
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
@@ -28,7 +28,7 @@ all: $(EXE)
 debug: all
 
 $(EXE): %: %.o
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $< -o $@
 
 $(OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

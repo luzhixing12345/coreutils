@@ -1,10 +1,8 @@
-# xbox
+# coreutils
 
-xbox 是一个 GNU coreutils 的实现
+GNU coreutils 的实现
 
-xbox 是一个轻量级的 Unix 命令行程序的函数库, 可以实现 C 函数级调用
-
-xbox 是一个轻量级的基础 C 库, 包括命令行参数处理和字符串处理
+同时本仓库也是一个轻量级的 Unix 命令行程序的函数库, 可以实现 C 函数级调用
 
 ## 编译和使用
 
