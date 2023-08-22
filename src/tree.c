@@ -79,7 +79,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             temp = temp->parent;
         }
     } else {
-        printf("%s\n", XBOX_colorprint(dir->name, dir->name));
+        printf("%s\n", XBOX_file_print(dir->name, dir->name));
     }
     // 深度 -L
     if (level > 0 && depth >= level) {
@@ -141,7 +141,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (no_color) {
                 printf("%s", dir->dp[i]->name);
             } else {
-                printf("%s", XBOX_colorprint(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
+                printf("%s", XBOX_file_print(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
             }
             printf("\n");
         }

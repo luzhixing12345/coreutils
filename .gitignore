@@ -64,3 +64,5 @@ testfiles/*.txt
 
 ignore.py
 test.py
+*.txt
+*.log

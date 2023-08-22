@@ -1,0 +1,15 @@
+{
+    "ls": {
+        "files": [
+            ".",
+            "./src",
+            "./testfiles",
+            "md-docs/",
+            "docs"
+        ],
+        "args": [
+            "-l",
+            "-a"
+        ]
+    }
+}

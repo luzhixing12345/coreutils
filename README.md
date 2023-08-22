@@ -2,8 +2,6 @@
 
 GNU coreutils 的实现
 
-同时本仓库也是一个轻量级的 Unix 命令行程序的函数库, 可以实现 C 函数级调用
-
 ## 编译和使用
 
 编译
@@ -68,6 +66,7 @@ main: main.c
 - [busybox](https://busybox.net/)
 - [glibc](https://github.com/bminor/glibc)
 - [gnu-coreutils](https://www.maizure.org/projects/decoded-gnu-coreutils/)
+- [asciiflow legacy](https://asciiflow.com/legacy/) 画图
 - [Boost](https://www.boost.org/)
 - [filesystem](https://en.cppreference.com/w/cpp/filesystem)
 - [Poco](https://github.com/pocoproject/poco)

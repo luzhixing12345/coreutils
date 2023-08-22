@@ -33,8 +33,8 @@
 #define XBOX_IS_DIR(dp) (dp->type == DT_DIR)
 
 typedef struct XBOX_File {
-    unsigned char type;       // 文件类型
-    char name[256];           // 文件名
+    unsigned char type;  // 文件类型
+    char name[256];      // 文件名
 } XBOX_File;
 
 typedef struct XBOX_Dir {
@@ -203,15 +203,20 @@ int is_archive(const char* path) {
 }
 
 /**
- * @brief 使用 ASNI 虚拟控制序列终端彩色打印
- *
+ * @brief 使用 ASNI 虚拟控制序列终端彩色打印(内部已实现对于 stdout 不为 tty 的处理)
+ * 
  * @param word 打印的字
- * @param full_path 全路径
+ * @param full_path 文件对应的全路径
+ * @return char* 函数本身不作打印处理, 返回拼接后的字符串
  */
-char* XBOX_colorprint(const char* word, const char* full_path) {
+char* XBOX_file_print(const char* word, const char* full_path) {
     char* color_code = NULL;
     struct stat file_stat;
     static char result[XBOX_PRINT_BUFFER_SIZE];
+    if (!isatty(1)) {
+        sprintf(result, "%s", word);
+        return result;
+    }
     if (stat(full_path, &file_stat) == -1) {
         // error occurred while getting file status
         color_code = XBOX_ANSI_COLOR_RESET;  // set the color to default
