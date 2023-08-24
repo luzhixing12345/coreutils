@@ -1,11 +1,8 @@
 
-
-#include "cat.h"
-
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "xbox.h"
+#include "xbox/xbox.h"
 
 // 全局变量
 static int show_end = 0;

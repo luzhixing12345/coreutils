@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "xargparse.h"
-#include "xbox.h"
+#include "xbox/xargparse.h"
+#include "xbox/xbox.h"
 
 // 也是一种方式, 但是不够精准
 // #include <utime.h>
@@ -56,7 +56,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
         XBOX_ARG_STRS_GROUP(&files, [name = FILE]),
         XBOX_ARG_BOOLEAN(&only_access, [-a][name = "only-access"][help = "change only the access time"]),
-        XBOX_ARG_BOOLEAN(&donot_create, [-c][--no-create][help="do not create any files"]),
+        XBOX_ARG_BOOLEAN(&donot_create, [-c][--no - create][help = "do not create any files"]),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;

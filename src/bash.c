@@ -17,7 +17,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "xargparse.h"
+#include "xbox/xargparse.h"
 
 static const char *VERSION = "v0.0.1";
 typedef void handler_t(int);
@@ -91,8 +91,7 @@ int parseline(const char *cmdline, char **argv) {
             argv[argc++] = buf;
             *delim = 0;
             buf = delim + 1;
-            while (*buf && (*buf == ' '))
-                buf++;
+            while (*buf && (*buf == ' ')) buf++;
 
             if (*buf == '\'' || *buf == '\"') {
                 char quote = *buf;
@@ -202,7 +201,7 @@ int main(int argc, const char **argv) {
                                  XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options,  XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
     XBOX_argparse_describe(&parser, "pwd", "Print the name of the current working directory", "");
     XBOX_argparse_parse(&parser, argc, argv);
 

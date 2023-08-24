@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "xargparse.h"
-#include "xbox.h"
-#include "xutils.h"
+#include "xbox/xargparse.h"
+#include "xbox/xbox.h"
+#include "xbox/xutils.h"
 
 int decode = 0;
 
@@ -108,7 +108,6 @@ char *XBOX_base64_decode(const char *str) {
 }
 
 void XBOX_base64(const char *str) {
-
     if (decode) {
         char *decoded_data = XBOX_base64_decode(str);
         printf("%s\n", decoded_data);

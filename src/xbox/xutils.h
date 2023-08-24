@@ -203,11 +203,10 @@ int is_archive(const char* path) {
 }
 
 /**
- * @brief 使用 ASNI 虚拟控制序列终端彩色打印(内部已实现对于 stdout 不为 tty 的处理)
- * 
+ * @brief 使用 ASNI 虚拟控制序列终端彩色打印
+ *
  * @param word 打印的字
- * @param full_path 文件对应的全路径
- * @return char* 函数本身不作打印处理, 返回拼接后的字符串
+ * @param full_path 全路径
  */
 char* XBOX_file_print(const char* word, const char* full_path) {
     char* color_code = NULL;

@@ -1,8 +1,7 @@
 
-#include "xargparse.h"
 #include <sys/utsname.h>
 
-
+#include "xbox/xargparse.h"
 
 void XBOX_arch() {
     struct utsname unameData;
@@ -14,10 +13,9 @@ void XBOX_arch() {
 }
 
 int main(int argc, const char **argv) {
-    argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
-        XBOX_ARG_END()};
+    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
+                                 XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
+                                 XBOX_ARG_END()};
 
     XBOX_argparse parser;
     XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
@@ -31,7 +29,7 @@ int main(int argc, const char **argv) {
         XBOX_argparse_info(&parser);
     }
     if (XBOX_ismatch(&parser, "version")) {
-        printf("%s\n",XBOX_VERSION);
+        printf("%s\n", XBOX_VERSION);
     }
     XBOX_arch();
 

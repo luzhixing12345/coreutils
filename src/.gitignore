@@ -1,9 +1,7 @@
-base64
-ls
-stat
-bash
-cat
-tree
-arch
-touch
-pwd
+
+
+*
+!*.c
+!*.h
+!.gitignore
+!xbox

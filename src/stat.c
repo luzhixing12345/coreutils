@@ -5,7 +5,7 @@
 #include <sys/vfs.h>
 #include <time.h>
 
-#include "xbox.h"
+#include "xbox/xbox.h"
 
 char **dirs;
 static int dereference = 0;
@@ -85,7 +85,6 @@ char *stat_file_type(struct stat *st) {
     }
 }
 
-
 void XBOX_stat(const char *name) {
     struct stat st;
     struct passwd *pwd;
@@ -160,7 +159,6 @@ void XBOX_stat(const char *name) {
     strftime(modify_time, sizeof(modify_time), "%Y-%m-%d %H:%M:%S", tm);
     tm = localtime(&st.st_ctime);
     strftime(change_time, sizeof(change_time), "%Y-%m-%d %H:%M:%S", tm);
-
 
     // 链接做处理
     if (S_ISLNK(st.st_mode)) {

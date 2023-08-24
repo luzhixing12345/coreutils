@@ -4,62 +4,20 @@ GNU coreutils 的实现
 
 ## 编译和使用
 
-编译
-
 ```bash
+## 编译
 make
-```
 
-安装: 意味着将以高优先级使用 xbox 编译得到的程序
-
-```bash
+## 安装
 sudo make install
-```
 
-卸载
-
-```bash
+## 卸载
 sudo make uninstall
-```
-
-### Linux C 库
-
-默认编译可以得到一个子文件夹 `xbox/`
-
-```bash
-├── xbox
-│   ├── bin         所有可执行文件
-│   ├── include     头文件
-│   └── lib         静态链接库
-├── src             源代码实现
-└── test            测试程序
-```
-
-您可以引入 `xbox/include` 下的相关头文件并链接 `xbox/lib/libxbox.a` 以实现函数调用
-
-```bash
-gcc -Ixbox/include -Lxbox/lib main.c -lxbox -o main
-```
-
-或者您习惯 Makefile
-
-```Makefile
-CC = gcc
-INCLUDE_DIRS += -Ixbox/include
-LD_LIBRARY_PATH += -Lxbox/lib
-LDFLAGS += xbox
-
-main: main.c
-    $(CC) $(INCLUDE_DIRS) $(LD_LIBRARY_PATH) $^ $(LDFLAGS) -o $@
 ```
 
 ## 文档
 
-关于如何使用 xbox 的 Linux 工具请参考 [工具文档](https://luzhixing12345.github.io/coreutils)
-
-关于如何使用相关头文件请参考 [头文件文档](https://luzhixing12345.github.io/coreutils)
-
-[busybox源码构建]()
+具体实现细节请参考 [coreutils document](https://luzhixing12345.github.io/coreutils)
 
 ## 参考
 

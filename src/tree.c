@@ -1,6 +1,6 @@
-#include "xargparse.h"
-#include "xbox.h"
-#include "xutils.h"
+#include "xbox/xargparse.h"
+#include "xbox/xbox.h"
+#include "xbox/xutils.h"
 
 static char **directories = NULL;
 static int all_files = 0;

@@ -6,9 +6,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#include "xargparse.h"
-#include "xbox.h"
-#include "xutils.h"
+#include "xbox/xbox.h"
 
 #define XBOX_LS_ALIGN_SPACE 2
 
@@ -18,7 +16,6 @@ char **dirs = NULL;
 int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
-
 
 // +---------------------------------------------------------------------------------+
 // |                                                                                 |
@@ -51,10 +48,6 @@ int long_list = 0;
 // |   +--+--------+   +-+---------+   +-+---------+                 |
 // |                                                                 |
 // +-----------------------------------------------------------------+
-
-
-
-
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -126,9 +119,9 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
 }
 
 /**
- * @brief 
- * 
- * @param dir_name 
+ * @brief
+ *
+ * @param dir_name
  */
 void ls(const char *dir_name) {
     int flag = 0;
