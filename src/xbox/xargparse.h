@@ -260,7 +260,7 @@ void XBOX_argparse_describe(XBOX_argparse *parser, const char *name, const char 
         description = "About how to use the program";
     }
     parser->description = description;
-    if (strlen(epilog) == 0) {
+    if (epilog == NULL || strlen(epilog) == 0) {
         epilog = "xargparse online help: <https://github.com/luzhixing12345/libc>";
     }
     parser->epilog = epilog;

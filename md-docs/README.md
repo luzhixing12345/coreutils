@@ -2,18 +2,19 @@
 
 本文的用于记录 GNU coreutils 的实现细节
 
+![GNU](https://raw.githubusercontent.com/learner-lu/picbed/master/GNU.png)
+
 ## 编译和使用
 
 ```bash
 ## 编译
 make
 
-## 安装
-sudo make install
-
-## 卸载
-sudo make uninstall
+## 打包编译
+make release
 ```
+
+> 由于源码实现中并未使用类似 busybox 集成所有工具到一个可执行文件的方式, 而是采用单文件编译单可执行文件的方式, 因此如果想要制作 initramfs 建议配套 libc, 静态链接 glibc 体积很不划算
 
 ## 目录
 

@@ -2,17 +2,16 @@
 
 GNU coreutils 的实现
 
+![GNU](https://raw.githubusercontent.com/learner-lu/picbed/master/GNU.png)
+
 ## 编译和使用
 
 ```bash
 ## 编译
 make
 
-## 安装
-sudo make install
-
-## 卸载
-sudo make uninstall
+## 打包编译
+make release
 ```
 
 ## 文档
