@@ -8,10 +8,10 @@ GNU coreutils 的实现
 
 ```bash
 ## 编译
-make
+make -j4
 
 ## 打包编译
-make release
+make release -j4
 ```
 
 ## 文档

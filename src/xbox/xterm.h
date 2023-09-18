@@ -80,4 +80,5 @@ char *XBOX_colorful_print(XBOX_term_word *word) {
     pos += strlen(p);
     vt_seq[pos] = 0;
     return vt_seq;
+    
 }

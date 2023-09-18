@@ -6,6 +6,8 @@
 
 int print_database = 0;
 
+
+
 void dircolors() {
     char *ls_colors = getenv("LS_COLORS");
     if (print_database) {

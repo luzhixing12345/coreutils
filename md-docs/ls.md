@@ -1,9 +1,30 @@
 
 # ls
 
-> [ls 介绍](https://wangchujiang.com/linux-command/c/ls.html)
-
 应该算是最常用的命令之一了, 用于列出目录下文件信息
+
+C 标准库中提供了对于目录的操作函数, 下面是一个极简的 ls 实现
+
+```c
+#include <stdio.h>
+
+#include <dirent.h>
+#include <sys/types.h>
+
+int main(int argc, char** argv) {
+    DIR* dir;
+    struct dirent* entry;
+
+    char* path = ".";  // 目录路径
+    dir = opendir(path);
+
+    while ((entry = readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+    closedir(dir);
+    return 0;
+}
+```
 
 ## 搜索文件
 
@@ -32,3 +53,6 @@ ow=34;42: 其他可写目录
 st=37;44: 套接字目录
 ex=01;32: 可执行文件(颜色为深绿,粗体)
 
+## 参考
+
+- [ls command](https://wangchujiang.com/linux-command/c/ls.html)

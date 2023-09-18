@@ -16,7 +16,7 @@ LIB = lib$(TARGET).a
 
 SRC := $(wildcard $(SRC_PATH)/*.c)
 OBJ = $(SRC:$(SRC_EXT)=o)
-HEADER = $(wildcard $(SRC_PATH)/*.h)
+HEADER = $(wildcard $(SRC_PATH)/xbox/*.h)
 EXE = $(OBJ:%.o=%)
 
 ifeq ($(MAKECMDGOALS),debug)
@@ -30,7 +30,8 @@ debug: all
 $(EXE): %: %.o
 	$(CC) $< -o $@
 
-$(OBJS): %.o: %.c
+
+%.o: %.c $(HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # ------------------------- #

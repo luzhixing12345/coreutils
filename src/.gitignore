@@ -5,3 +5,5 @@
 !*.h
 !.gitignore
 !xbox
+
+!dircolors.hin
