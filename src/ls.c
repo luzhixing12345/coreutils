@@ -5,7 +5,9 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
+#include "xbox/xargparse.h"
 #include "xbox/xbox.h"
 
 #define XBOX_LS_ALIGN_SPACE 2
@@ -16,38 +18,7 @@ char **dirs = NULL;
 int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
-
-// +---------------------------------------------------------------------------------+
-// |                                                                                 |
-// |   +-----------+   +-----------+  +-----------+   +-----------+   +-----------+  |
-// |   |    1      |   |    3      |  |     5     |   |     7     |   |     9     |  |
-// |   |           |   |           |  |             |   |           |   |           |  |
-// |   +-----------+   +-----------+  +-----------+   +-----------+   +-----------+  |
-// |                                                                                 |
-// |   +-----------+   +-----------+  +-----------+   +-----------+   +-----------+  |
-// |   |    2      |   |    4      |  |     6     |   |     8     |   |     10    |  |
-// |   |           |   |           |  |           |   |           |   |           |  |
-// |   +-----------+   +-----------+  +-----------+   +-----------+   +-----------+  |
-// |                                                                                 |
-// +---------------------------------------------------------------------------------+
-// +-----------------------------------------------------------------+
-// |                                                                 |
-// |   +--+--------+   +-+---------+   +-+---------+   +-----------+ |
-// |   |  |  1     |   | | 4       |   | | 7       |   | 10        | |
-// |   |  |        |   | |         |   | |         |   |           | |
-// |   +-----------+   +-----------+   +-----------+   +-----------+ |
-// |      |              |               |                           |
-// |   +-----------+   +-----------+   +-----------+                 |
-// |   |  |  2     |   | | 5       |   | | 8       |                 |
-// |   |  |        |   | |         |   | |         |                 |
-// |   +-----------+   +-----------+   +-----------+                 |
-// |      |              |               |                           |
-// |   +-----------+   +-----------+   +-----------+                 |
-// |   |  |  3     |   | | 6       |   | | 9       |                 |
-// |   |  v        |   | v         |   | v         |                 |
-// |   +--+--------+   +-+---------+   +-+---------+                 |
-// |                                                                 |
-// +-----------------------------------------------------------------+
+char *color = "always";
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -125,6 +96,7 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
  */
 void ls(const char *dir_name) {
     int flag = 0;
+    printf("color = %s\n", color);
     if (all_files) {
         flag = XBOX_DIR_ALL;
     } else if (almost_all) {
@@ -273,21 +245,27 @@ void ls_longlist(const char *dir_name) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        XBOX_ARG_BOOLEAN(&all_files, [-a][--all][help = "show help information"]),
-        XBOX_ARG_BOOLEAN(&long_list, [-l][name = "long-list"][help = "use a long listing format"]),
-        XBOX_ARG_BOOLEAN(&almost_all, [-A][name = "almost-all"][help = "do not list implied . and .."]),
-        XBOX_ARG_BOOLEAN(NULL, [--version][help = "show version"]),
-        XBOX_ARG_STRS_GROUP(&dirs, [name = src][help = "source"]),
+        XBOX_ARG_BOOLEAN(NULL, "-h","--help", "show help information", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&all_files, "-a", "--all", "list all files", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&long_list, "-l", "long-list", "use a long listing format", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&almost_all, "-A", NULL, "do not list implied . and ..", NULL, "almost-all"),
+        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "show version", NULL, NULL),
+        XBOX_ARG_STR(&color,NULL,
+                     "--color","colorize the output; WHEN can be 'always' (default if omitted), 'auto', or "
+                                      "'never'; more info below","[=WHEN]", NULL),
+        XBOX_ARG_STRS_GROUP(&dirs, NULL, NULL, "source", NULL, "src"),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK);
+    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK|XBOX_ARGPARSE_ENABLE_EQUAL|XBOX_ARGPARSE_ENABLE_STICK);
     XBOX_argparse_describe(&parser,
                            "ls",
                            "List information about the FILEs (the current directory by default).\nSort entries "
                            "alphabetically if none of -cftuvSUX nor --sort is specified.",
-                           "");
+                           "Using color to distinguish file types is disabled both by default and\n"
+                           "with --color=never.  With --color=auto, ls emits color codes only when\n"
+                           "standard output is connected to a terminal.  The LS_COLORS environment\n"
+                           "variable can change the settings.  Use the dircolors command to set it.\n");
     XBOX_argparse_parse(&parser, argc, argv);
 
     if (XBOX_ismatch(&parser, "help")) {
@@ -303,10 +281,10 @@ int main(int argc, const char **argv) {
     int n = XBOX_ismatch(&parser, "src");
 
     // 对于 stdout 为终端窗口的, 获取终端宽度用于后续计算
-    if (isatty(1)) {
+    if (isatty(STDOUT_FILENO)) {
         struct winsize terminal_size;
 
-        if (ioctl(1, TIOCGWINSZ, &terminal_size) < 0) {
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &terminal_size) < 0) {
             perror("ioctl");
             XBOX_free_argparse(&parser);
             exit(1);

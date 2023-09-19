@@ -151,19 +151,18 @@ void XBOX_tree(XBOX_Dir *dir) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "show version"]),
-        XBOX_ARG_BOOLEAN(&all_files, [-a][name = "all_files"][help = "All files are listed."]),
-        XBOX_ARG_BOOLEAN(&directory_only, [-d][name = "only directory"][help = "List directories only."]),
-        XBOX_ARG_BOOLEAN(&current_directory_only,
-                         [-x][name = "current-dir"][help = "Stay on current filesystem only."]),
-        XBOX_ARG_STRS_GROUP(&directories, [name = directory]),
-        XBOX_ARG_BOOLEAN(&no_color, [-n][name = "no-color"][help = "Turn colorization off always (-C overrides)."]),
-        XBOX_ARG_BOOLEAN(NULL, [-C][name = "has-color"][help = "Turn colorization on always."]),
-        XBOX_ARG_BOOLEAN(&unsort, [-U][name = "unsort"][help = "Leave files unsorted."]),
-        XBOX_ARG_BOOLEAN(&reverse_sort, [-r][name = "reverse"][help = "Reverse the order of the sort."]),
-        XBOX_ARG_INT(&level, [-L][name = "level"][help = "Descend only level directories deep."]),
-        XBOX_ARG_BOOLEAN(&full_name, [-f][name = "full-name"][help = "Print the full path prefix for each file."]),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&all_files, "-a", NULL, "All files are listed.", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&directory_only, "-d", NULL, "List directories only.", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&current_directory_only, "-x", NULL, "Stay on current filesystem only.", NULL, NULL),
+        XBOX_ARG_STRS_GROUP(&directories, NULL, NULL, NULL, NULL, NULL),
+        XBOX_ARG_BOOLEAN(&no_color, "-n", NULL, "Turn colorization off always (-C overrides).", NULL, "no-color"),
+        XBOX_ARG_BOOLEAN(NULL, "-C", NULL, "Turn colorization on always.", NULL, "has-color"),
+        XBOX_ARG_BOOLEAN(&unsort, "-U", NULL, "Leave files unsorted.", NULL, "unsort"),
+        XBOX_ARG_BOOLEAN(&reverse_sort, "-r", NULL, "Reverse the order of the sort.", NULL, "reverse"),
+        XBOX_ARG_INT(&level, "-L", NULL, "Descend only level directories deep.", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&full_name, "-f", NULL, "Print the full path prefix for each file.", NULL, NULL),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;

@@ -104,19 +104,20 @@ void XBOX_cat(const char *file_name) {
 
 int main(int argc, char const *argv[]) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_STRS_GROUP(&files, [name = FILE][help = "source"]),
-        XBOX_ARG_BOOLEAN(NULL, [-A]["--show-all"][help = "equivalent to -vET"]),
-        XBOX_ARG_BOOLEAN(&nonblank, [-b]["--number-nonblank"][help = "number noempty output lines, overrides -n"]),
-        XBOX_ARG_BOOLEAN(&show_end, [-e][name = e][help = "equivalent to -vE"]),
-        XBOX_ARG_BOOLEAN(&show_end, [-E]["--show-ends"][help = "display $ at end of each line"]),
-        XBOX_ARG_BOOLEAN(&show_number, [-n][--number][help = "number all output lines"]),
-        XBOX_ARG_BOOLEAN(&squeeze, [-s]["--squeeze-blank"][help = "suppress repeated empty output lines"]),
-        XBOX_ARG_BOOLEAN(&show_tab, [-t][name = t][help = "equivalent to -vT"]),
-        XBOX_ARG_BOOLEAN(&show_tab, [-T][name = bigt][help = "display TAB character as ^I"]),
-        XBOX_ARG_BOOLEAN(NULL, [-u][name = u][help = (ignored)]),
-        XBOX_ARG_BOOLEAN(NULL, [-v]["--show-nonprinting"][help = "use ^ and M- notation, except for LFD and TAB"]),
-        XBOX_ARG_BOOLEAN(NULL, [--version][help = "output version information and exit"]),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_STRS_GROUP(&files, NULL, NULL, "source", NULL, "FILE"),
+        XBOX_ARG_BOOLEAN(NULL, "-A", "--show-all", "equivalent to -vET", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&nonblank, "-b", "--number-nonblank", "number noempty output lines, overrides -n", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&show_end, "-e", NULL, "equivalent to -vE", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&show_end, "-E", "--show-ends", "display $ at end of each line", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&show_number, "-n", "--number", "number all output lines", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&squeeze, "-s", "--squeeze-blank", "suppress repeated empty output lines", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&show_tab, "-t", NULL, "equivalent to -vT", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&show_tab, "-T", NULL, "display TAB character as ^I", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-u", NULL, NULL, NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--show-nonprinting", "use ^ and M- notation, except for LFD and TAB", NULL, NULL),
+
         XBOX_ARG_END()};
 
     XBOX_argparse parser;

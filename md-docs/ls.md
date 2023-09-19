@@ -195,30 +195,74 @@ printf "\033[1;91m123\033[1;0m\n"
 
 ### LS_COLORS
 
-ls 对应的各个文件类型的颜色并不是写死的, 实际上我们可以看到不同的 shell, terminal 都会有一些预制的颜色主题
+作为一个高度模块化设计的系统, ls 对应的各个文件类型的颜色肯定不是写死的, 实际上我们可以看到不同的 shell, terminal 都会有一些预制的颜色主题
+
+shell 中有一个名为 `LS_COLORS` 的变量, 改变了控制着如何显示 ls 的颜色, 直接输出的信息比较杂乱, 建议使用 tr 按分隔符 `:` 做换行处理操作
 
 ```bash
 echo $LS_COLORS | tr ':' '\n'
 ```
 
-rs=0: 重置所有属性
-di=01;34: 目录(颜色为深蓝)
-ln=01;36: 符号链接(颜色为深青)
-mh=00: 多硬链接文件
-pi=40;33: FIFO(颜色为黄色底部)
-so=01;35: 套接字(颜色为深紫)
-do=01;35: 目录(颜色为深紫)
-bd=40;33;01: 块设备文件(颜色为黄色底部,粗体)
-cd=40;33;01: 字符设备文件(颜色为黄色底部,粗体)
-or=40;31;01: "其他可读"(Other Readable),用于表示其他用户有读取权限的文
-mi=00: 可打印字符
-su=37;41: 带有 setuid 位的文件(颜色为白色字体,红色底部)
-sg=30;43: 带有 setgid 位的文件(颜色为黑色字体,黄色底部)
-ca=30;41: 带有 capablities 的文件(颜色为黑色字体,红色底部)
-tw=30;42: 可交换文件
-ow=34;42: 其他可写目录
-st=37;44: 套接字目录
-ex=01;32: 可执行文件(颜色为深绿,粗体)
+输出结果形如 `key=value` 的键值对, 其中 value 部分就是前文提到的虚拟终端序列, 比如目录 di 为 01 (粗体) 35 (紫色)
+
+key 可分为两类, 一种是缩写形式, 其缩写含义如下所示, 需要探查文件信息来判断相应的文件类型:
+
+- `rs`: 重置(Reset)
+- `di`: 目录(Directory)
+- `ln`: 符号链接(Symbolic Link)
+- `mh`: 多硬连接的文件(Multihardlink)
+- `pi`: 命名管道(Named Pipe)
+- `so`: 套接字(Socket)
+- `do`: 目录(Door)
+- `bd`: 块设备文件(Block Device)
+- `cd`: 字符设备文件(Character Device)
+- `or`: 可执行文件(Executable)
+- `mi`: 未知文件类型(Orphan)
+- `su`: 设置用户ID位(Set UID)
+- `sg`: 设置组ID位(Set GID)
+- `ca`: 具有可执行位但没有用户ID或组ID位的文件(Capability)
+- `tw`: 粘滞位设置且可写(Sticky and World Writable)
+- `ow`: 粘滞位设置但不可写(Sticky but Not World Writable)
+- `st`: 套接字文件(Socket File)
+- `ex`: 可执行文件(Executable)
+
+另一种是 unix [fnmatch](https://docs.python.org/3/library/fnmatch.html) 的正则匹配模式, 诸如此类的格式
+
+```bash
+*.tbz=01;31
+*.tbz2=01;31
+*.tz=01;31
+*.deb=01;31
+*.rpm=01;31
+*.jar=01;31
+```
+
+> 正常来说这里需要实现一个 fnmatch 的正则解析器, 但为了简化实现暂时认为都是 `*.xxx` 的模式, **只考虑后缀**
+
+因此在实现 ls 彩色输出的时候首先需要探查 LS_COLORS 环境变量并进行解析, 然后根据不同的文件类型以对应的虚拟终端序列输出
+
+如果当前 shell 并没有 $LS_COLORS 变量, 那么 ls 就使用默认的内置颜色类型
+
+> 比如使用 unset LS_COLORS 清除 LS_COLORS, 那么压缩文件等就不会显示红色了
+
+笔者编写了一个小脚本用于创建各种文件类型并使用 ls 查看, 感兴趣的读者可与此处下载
+
+```bash
+wget https://raw.githubusercontent.com/luzhixing12345/coreutils/main/scripts/ls/ls_all_types_files.sh
+./ls_all_types_files.sh
+```
+
+### 修改颜色
+
+如果想要修改默认 ls 对于不同类型文件的颜色可以直接修改 LS_COLORS, 例如可以使用如下方式在当前 shell 中修改 LS_COLORS 补充添加对于目录 di 的颜色
+
+```bash
+export LS_COLORS="$LS_COLORS:di=01;31"
+```
+
+![20230919083023](https://raw.githubusercontent.com/learner-lu/picbed/master/20230919083023.png)
+
+修改 LS_COLORS 的另一个方式是通过 dircolors, 实际上 shell 启动时的 $LS_COLORS 就是 dircolors 来进行设置的, 具体信息请阅读下一部分 dircolors
 
 ## 参考
 

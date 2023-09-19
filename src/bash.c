@@ -161,12 +161,12 @@ void eval(char *cmdline) {
             }
         }
         if (!bg) {
-            // 对于前台进程，添加job后解除阻塞，并通过waitfg等待子进程结束后回收
+            // 对于前台进程,添加job后解除阻塞,并通过waitfg等待子进程结束后回收
             sigprocmask(SIG_BLOCK, &mask_all, NULL);
             sigprocmask(SIG_SETMASK, &prev, NULL);
             waitfg(pid);
         } else {
-            // 后台进程不需要等待子进程，进程结束之后收到SIGCHLD信号回收即可
+            // 后台进程不需要等待子进程,进程结束之后收到SIGCHLD信号回收即可
             sigprocmask(SIG_BLOCK, &mask_all, NULL);
             sigprocmask(SIG_SETMASK, &prev, NULL);
         }
@@ -196,8 +196,8 @@ void app_error(char *msg) {
 }
 
 int main(int argc, const char **argv) {
-    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-                                 XBOX_ARG_INT(NULL, [-v][--version][help = "show version"]),
+    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
+                                 XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
                                  XBOX_ARG_END()};
 
     XBOX_argparse parser;

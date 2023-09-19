@@ -201,13 +201,13 @@ void XBOX_stat(const char *name) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "display this help and exit"]),
-        XBOX_ARG_STRS(&dirs, [name = FILE]),
-        XBOX_ARG_BOOLEAN(&dereference, [-L][--dereference][help = "follow links"]),
-        XBOX_ARG_BOOLEAN(&file_system,
-                         [-f]["--file-system"][help = "display file system status instead of file status"]),
-        XBOX_ARG_BOOLEAN(&terse, [-t][--terse][help = "print the information in terse form"]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "output version information and exit"]),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_STRS(&dirs, NULL, NULL, NULL, NULL, NULL),
+        XBOX_ARG_BOOLEAN(&dereference, "-L", "--dereference", "follow links", NULL, NULL),
+        XBOX_ARG_BOOLEAN(
+            &file_system, "-f", "--file-system", "display file system status instead of file status", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&terse, "-t", "--terse", "print the information in terse form", NULL, NULL),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;

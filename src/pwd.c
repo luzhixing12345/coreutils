@@ -67,12 +67,16 @@ void XBOX_pwd() {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, [-h][--help][help = "show help information"]),
-        XBOX_ARG_BOOLEAN(NULL, [-v][--version][help = "show version"]),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
         XBOX_ARG_BOOLEAN(&logical,
-                         [-L][--logical][help = "print the value of $PWD if it names the current working directory"]),
-        XBOX_ARG_BOOLEAN(&physical,
-                         [-P][--physical][help = "print the physical directory, without any symbolic links"]),
+                         "-L",
+                         "--logical",
+                         "print the value of $PWD if it names the current working directory",
+                         NULL,
+                         NULL),
+        XBOX_ARG_BOOLEAN(
+            &physical, "-P", "--physical", "print the physical directory, without any symbolic links", NULL, NULL),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
