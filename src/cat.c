@@ -104,8 +104,8 @@ void XBOX_cat(const char *file_name) {
 
 int main(int argc, char const *argv[]) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_STRS_GROUP(&files, NULL, NULL, "source", NULL, "FILE"),
         XBOX_ARG_BOOLEAN(NULL, "-A", "--show-all", "equivalent to -vET", NULL, NULL),
         XBOX_ARG_BOOLEAN(&nonblank, "-b", "--number-nonblank", "number noempty output lines, overrides -n", NULL, NULL),

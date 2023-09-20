@@ -121,8 +121,8 @@ void XBOX_base64(const char *str) {
 
 int main(int argc, const char **argv) {
     char *input_str = NULL;
-    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-                                 XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+                                 XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
                                  XBOX_ARG_BOOLEAN(&decode, "-d", "--decode", "decode data", NULL, NULL),
                                  XBOX_ARG_STR_GROUP(&input_str, NULL, NULL, NULL, NULL, "input"),
                                  XBOX_ARG_END()};

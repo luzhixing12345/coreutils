@@ -151,8 +151,8 @@ void XBOX_tree(XBOX_Dir *dir) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_BOOLEAN(&all_files, "-a", NULL, "All files are listed.", NULL, NULL),
         XBOX_ARG_BOOLEAN(&directory_only, "-d", NULL, "List directories only.", NULL, NULL),
         XBOX_ARG_BOOLEAN(&current_directory_only, "-x", NULL, "Stay on current filesystem only.", NULL, NULL),

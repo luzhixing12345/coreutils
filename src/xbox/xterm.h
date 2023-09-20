@@ -31,6 +31,19 @@
 #define XBOX_TERM_COLOR_EXTEND "\033[38m"  // 前景色扩展
 #define XBOX_TERM_COLOR_DEFAULT "\033[39m"
 
+enum COLOR_OPTION {
+    COLOR_ALWAYS,
+    COLOR_AUTO,
+    COLOR_NEVER
+};
+
+void print_invalid_color_option() {
+    printf("Valid arguments are:\n");
+    printf("- 'always', 'yes', 'force'\n");
+    printf("- 'never', 'no', 'none'\n");
+    printf("- 'auto', 'tty', 'if-tty'\n");
+}
+
 typedef struct {
     char *font_type;
     char *front_color;  // 前景色

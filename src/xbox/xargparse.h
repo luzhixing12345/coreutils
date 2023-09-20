@@ -215,7 +215,6 @@ int check_valid_character(const char *str) {
  */
 void check_valid_options(XBOX_argparse *parser) {
     // group 不重名
-
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->long_name) {
@@ -228,11 +227,7 @@ void check_valid_options(XBOX_argparse *parser) {
                 free(p);
                 exit(XBOX_FORMAT_ERROR);
             }
-            if (!option->name) {
-                // 将 long_name 赋值给 name
-                // printf("name -> [%s]\n", l_name);
-                option->name = l_name;
-            }
+            free(p);
         }
     }
 
@@ -240,11 +235,13 @@ void check_valid_options(XBOX_argparse *parser) {
         argparse_option *option1 = &(parser->options[i]);
         for (int j = i + 1; j < parser->args_number; j++) {
             argparse_option *option2 = &(parser->options[j]);
+            // 没有两个参数同名
             if (option1->name && option2->name && !strcmp(option1->name, option2->name)) {
                 fprintf(stderr, "%s: options have the same name [%s]\n", XBOX_ARGS_BUILD_ERROR, option1->name);
                 XBOX_free_argparse(parser);
                 exit(XBOX_FORMAT_ERROR);
             }
+            // 没有两个长参数同名
             if (option1->long_name && option2->long_name) {
                 if (!strcmp(option1->long_name, option2->long_name)) {
                     fprintf(stderr,
@@ -255,6 +252,7 @@ void check_valid_options(XBOX_argparse *parser) {
                     exit(XBOX_FORMAT_ERROR);
                 }
             }
+            // 没有两个短参数同名
             if (option1->short_name && option2->short_name) {
                 if (!strcmp(option1->short_name, option2->short_name)) {
                     fprintf(stderr,
@@ -343,7 +341,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option);
  * @param value
  * @return char*
  */
-char *clearEscapeCharaters(char *value) {
+char *clear_escape_charaters(char *value) {
     int length = strlen(value);
     int escape_char_number = 0;
     for (int i = 0; i < length; i++) {
@@ -575,14 +573,17 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
  */
 void value_pass(XBOX_argparse *parser, argparse_option *option) {
     // 警告信息, 覆盖
-    if (option->match && (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_INT) &&
-        !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-        fprintf(stderr, "%s: ignore argument [%s] for [%s]\n", XBOX_ARGS_PARSE_WARNING, option->value, option->name);
-        return;
-    }
+    // if (option->match && (option->type == ARGPARSE_OPT_STR || option->type == ARGPARSE_OPT_INT) &&
+    //     !(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
+    //     fprintf(stderr, "%s: ignore argument [%s]\n", XBOX_ARGS_PARSE_WARNING, option->value);
+    //     return;
+    // }
 
     // 单个匹配
     if ((option->type == ARGPARSE_OPT_STR) || option->type == ARGPARSE_OPT_STR_GROUP) {
+        if (option->match >= 1) {
+            free(*(char**)option->p);
+        }
         *(char **)option->p = (char *)malloc(strlen(option->value) + 1);
         strcpy(*(char **)option->p, option->value);
         option->match = 1;

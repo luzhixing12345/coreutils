@@ -201,8 +201,8 @@ void XBOX_stat(const char *name) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_STRS(&dirs, NULL, NULL, NULL, NULL, NULL),
         XBOX_ARG_BOOLEAN(&dereference, "-L", "--dereference", "follow links", NULL, NULL),
         XBOX_ARG_BOOLEAN(

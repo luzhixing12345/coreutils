@@ -2,15 +2,17 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pwd.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "xbox/xargparse.h"
-#include "xbox/xbox.h"
+#include "xbox/xterm.h"
+#include "xbox/xutils.h"
 
-#define XBOX_LS_ALIGN_SPACE 2
+#define LS_ALIGN_SPACE 2
 
 static int terminal_width = 0;
 
@@ -19,6 +21,7 @@ int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
 char *color = "always";
+enum COLOR_OPTION color_option;
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -45,9 +48,6 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
     // for (int i = 0; i < dir->count; i++) {
     //     printf("file_width[%d]:[%s] = %d\n",i,dir->dp[i]->name,file_widths[i]);
     // }
-
-    int end_flag = 0;
-
     for (;; row++) {
         int index = 0;
         int column_width = 0;
@@ -56,37 +56,27 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
             for (int i = 0; i < row; i++) {
                 column_width = MAX(column_width, file_widths[index]);
                 index++;
-                if (index >= dir->count) {
-                    total_width += column_width;
-                    if (total_width <= terminal_width) {
-                        end_flag = 1;
-                    }
-                    total_width = 0;
+                if (index == dir->count) {
                     break;
                 }
             }
-            total_width += column_width + XBOX_LS_ALIGN_SPACE;
-            column_width = 0;
-            if (total_width > terminal_width) {
-                total_width = 0;
-                break;
+            // 最后一列无间隔
+            if (index == dir->count) {
+                total_width += column_width;
+            } else {
+                total_width += column_width + LS_ALIGN_SPACE;
             }
-        }
-
-        if (!end_flag) {
-            continue;
+            column_width = 0;
         }
         if (total_width <= terminal_width) {
-            end_flag = 1;
             break;
+        } else {
+            // printf("total width = %d, row = %d\n", total_width, row);
+            total_width = 0;
         }
     }
     free(file_widths);
-    if (end_flag) {
-        return row;
-    } else {
-        return -1;
-    }
+    return row;
 }
 
 /**
@@ -96,7 +86,6 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
  */
 void ls(const char *dir_name) {
     int flag = 0;
-    printf("color = %s\n", color);
     if (all_files) {
         flag = XBOX_DIR_ALL;
     } else if (almost_all) {
@@ -118,12 +107,6 @@ void ls(const char *dir_name) {
     }
 
     int row = calculaterow(dir, terminal_width);
-    if (row <= 0) {
-        XBOX_free_directory(dir);
-        printf("error: [%s]\n", dir_name);
-        return;
-    }
-    // printf("col = %d\n", row);
 
     // 计算每一列的宽度
     int col_num = (dir->count + row - 1) / row;
@@ -135,7 +118,8 @@ void ls(const char *dir_name) {
     while (index < dir->count) {
         int current_column_width = 0;
         for (int i = 0; i < row; i++) {
-            current_column_width = MAX(current_column_width, strlen(dir->dp[index]->name));
+            int length = strlen(dir->dp[index]->name);
+            current_column_width = MAX(current_column_width, length);
             index++;
             if (index >= dir->count) {
                 ls_col_width[col_index] = current_column_width;
@@ -245,19 +229,24 @@ void ls_longlist(const char *dir_name) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h","--help", "show help information", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "show help information", NULL, "help"),
         XBOX_ARG_BOOLEAN(&all_files, "-a", "--all", "list all files", NULL, NULL),
-        XBOX_ARG_BOOLEAN(&long_list, "-l", "long-list", "use a long listing format", NULL, NULL),
+        XBOX_ARG_BOOLEAN(&long_list, "-l", "--long-list", "use a long listing format", NULL, NULL),
         XBOX_ARG_BOOLEAN(&almost_all, "-A", NULL, "do not list implied . and ..", NULL, "almost-all"),
-        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "show version", NULL, NULL),
-        XBOX_ARG_STR(&color,NULL,
-                     "--color","colorize the output; WHEN can be 'always' (default if omitted), 'auto', or "
-                                      "'never'; more info below","[=WHEN]", NULL),
+        XBOX_ARG_BOOLEAN(NULL, NULL, "--version", "show version", NULL, "version"),
+        XBOX_ARG_STR(&color,
+                     NULL,
+                     "--color",
+                     "colorize the output; WHEN can be 'always' (default if omitted), 'auto', or "
+                     "'never'; more info below",
+                     "[=WHEN]",
+                     NULL),
         XBOX_ARG_STRS_GROUP(&dirs, NULL, NULL, "source", NULL, "src"),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
-    XBOX_argparse_init(&parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK|XBOX_ARGPARSE_ENABLE_EQUAL|XBOX_ARGPARSE_ENABLE_STICK);
+    XBOX_argparse_init(
+        &parser, options, XBOX_ARGPARSE_ENABLE_ARG_STICK | XBOX_ARGPARSE_ENABLE_EQUAL | XBOX_ARGPARSE_ENABLE_STICK);
     XBOX_argparse_describe(&parser,
                            "ls",
                            "List information about the FILEs (the current directory by default).\nSort entries "
@@ -290,6 +279,18 @@ int main(int argc, const char **argv) {
             exit(1);
         }
         terminal_width = terminal_size.ws_col;
+    }
+
+    if (!strcmp(color, "always")) {
+        color_option = COLOR_ALWAYS;
+    } else if (!strcmp(color, "auto")) {
+        color_option = COLOR_AUTO;
+    } else if (!strcmp(color, "never")) {
+        color_option = COLOR_NEVER;
+    } else {
+        print_invalid_color_option();
+        XBOX_free_argparse(&parser);
+        return 1;
     }
 
     if (n) {

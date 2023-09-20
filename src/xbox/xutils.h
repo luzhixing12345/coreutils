@@ -213,7 +213,7 @@ int is_archive(const char* path) {
 char* XBOX_file_print(const char* word, const char* full_path) {
     char* color_code = NULL;
     struct stat file_stat;
-    static char result[XBOX_PRINT_BUFFER_SIZE];
+    static char result[PATH_MAX];
     if (!isatty(1)) {
         sprintf(result, "%s", word);
         return result;

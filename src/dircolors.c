@@ -21,8 +21,8 @@ void dircolors() {
 }
 
 int main(int argc, const char **argv) {
-    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-                                 XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+    argparse_option options[] = {XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+                                 XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
                                  XBOX_ARG_BOOLEAN(&print_database, "-p", "print-database", "output defaults", NULL, NULL),
                                  XBOX_ARG_END()};
 

@@ -52,8 +52,8 @@ void XBOX_touch(char *file) {
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, NULL),
-        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_STRS_GROUP(&files, NULL, NULL, NULL, NULL, NULL),
         XBOX_ARG_BOOLEAN(&only_access, "-a", NULL, "change only the access time", NULL, NULL),
         XBOX_ARG_BOOLEAN(&donot_create, "-c", "--no-create", "do not create any files", NULL, NULL),
