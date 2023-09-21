@@ -156,6 +156,11 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
             database->dc_kvs[index].key[i - p] = 0;
             p = i + 1;
         } else if (lscolors_str[i] == ':') {
+            if (p == i) {
+                // 空操作
+                p++;
+                continue;
+            }
             strncpy(database->dc_kvs[index].value, lscolors_str + p, i - p);
             database->dc_kvs[index].value[i - p] = 0;
             p = i + 1;
@@ -167,6 +172,19 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
                 *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)p;
             }
             index++;
+        }
+    }
+    // LS_COLORS 没有以 : 结尾, 补齐最后的 value
+    if (p != length) {
+        strncpy(database->dc_kvs[index].value, lscolors_str + p, length - p);
+        database->dc_kvs[index].value[length - p] = 0;
+        // printf("%s\n", database->dc_kvs[index].value);
+        int offset = check_default_dc_config(database->dc_kvs[index].key, default_dc_config);
+        if (offset != -1) {
+            // 结构体内存地址赋值
+            // a little tricky
+            char *p = (char *)&(database->dc_kvs[index].value);
+            *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)p;
         }
     }
     // for (int i=0;i<index;i++) {
