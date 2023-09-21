@@ -225,7 +225,7 @@ char* XBOX_stat_access_mode(mode_t mode) {
     return buf;
 }
 
-int XBOX_number_length(int number) {
+int XBOX_number_length(long long number) {
     int size_length = 0;
     while (number) {
         size_length++;

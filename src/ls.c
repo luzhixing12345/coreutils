@@ -22,8 +22,26 @@ char **dirs = NULL;
 int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
+int sort_reverse = 0;
 char *color = "always";
 XBOX_dircolor_database *dircolor_database = NULL;
+
+typedef struct {
+    int link;
+    int user;
+    int group;
+    int block_size;
+} longlist_align;
+
+typedef struct {
+    char *user;
+    char *group;
+} longlist_item_info;
+
+typedef struct {
+    longlist_align *ls_align;
+    longlist_item_info *infos;
+} longlist_info;
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -62,12 +80,15 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
                     break;
                 }
             }
-            // 最后一列无间隔
-            if (index == dir->count) {
-                total_width += column_width;
-            } else {
-                total_width += column_width + LS_ALIGN_SPACE_NUMBER;
-            }
+
+            // GNU coreutils ls: 最后一列计算有间隔
+            total_width += column_width + LS_ALIGN_SPACE_NUMBER;
+            // // 最后一列无间隔
+            // if (index == dir->count) {
+            //     total_width += column_width;
+            // } else {
+            //     total_width += column_width + LS_ALIGN_SPACE_NUMBER;
+            // }
             column_width = 0;
         }
         if (total_width <= terminal_width) {
@@ -102,7 +123,13 @@ void ls(const char *dir_name) {
     // 对于 stdout 非终端的情况, 依次输出即可
     if (!isatty(1)) {
         for (int i = 0; i < dir->count; i++) {
-            printf("%s\n", dir->dp[i]->name);
+            if (!dircolor_database) {
+                printf("%s\n", dir->dp[i]->name);
+            } else {
+                printf("%s\n",
+                       XBOX_filename_print(
+                           dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
+            }
         }
         XBOX_free_directory(dir);
         return;
@@ -184,73 +211,97 @@ void ls_longlist(const char *dir_name) {
 
     XBOX_Dir *dir = XBOX_open_dir(dir_name, flag);
     qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
+
     int total_block_number = 0;
-    int max_block_size_length = 0;
-    int max_link_length = 0;
-    struct stat file_stat;
-    for (int i = 0; i < dir->count; i++) {
-        if (lstat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
-            XBOX_free_directory(dir);
-            perror("lstat");
-            return;
-        }
-        total_block_number += file_stat.st_blocks;
-        int size_length = XBOX_number_length(file_stat.st_size);
-        int link_length = XBOX_number_length(file_stat.st_nlink);
-        max_block_size_length = MAX(max_block_size_length, size_length);
-        max_link_length = MAX(max_link_length, link_length);
-    }
-    printf("total %d\n", total_block_number / 2);
+
+    longlist_info ls_info;
+    ls_info.infos = (longlist_item_info *)malloc(sizeof(longlist_item_info) * dir->count);
+    struct stat fs;
+
     struct passwd *pwd;
     struct group *grp;
-
+    longlist_align ls_align;
+    memset(&ls_align, 0, sizeof(longlist_align));
     for (int i = 0; i < dir->count; i++) {
-        char *full_path = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
-        if (lstat(full_path, &file_stat) < 0) {
+        if (lstat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &fs) < 0) {
             XBOX_free_directory(dir);
+            free(ls_info.infos);
             perror("lstat");
             return;
         }
-        char *st_mode_rwx = XBOX_stat_access_mode(file_stat.st_mode);
-        pwd = getpwuid(file_stat.st_uid);
-        grp = getgrgid(file_stat.st_gid);
+        total_block_number += fs.st_blocks;
 
-        struct tm *tm;
-        char modify_time[20];
-        // 格式化时间
+        pwd = getpwuid(fs.st_uid);
+        grp = getgrgid(fs.st_gid);
+        ls_info.infos[i].user = !pwd ? "UNKNOWN" : pwd->pw_name;
+        ls_info.infos[i].group = !grp ? "UNKNOWN" : grp->gr_name;
 
-        tm = localtime(&file_stat.st_mtime);
+        // 计算对齐所需要的长度
+        int link_length = XBOX_number_length(fs.st_nlink);
+        ls_align.link = MAX(ls_align.link, link_length);
+
+        int user_length = strlen(ls_info.infos[i].user);
+        ls_align.user = MAX(ls_align.user, user_length);
+
+        int group_length = strlen(ls_info.infos[i].group);
+        ls_align.group = MAX(ls_align.group, group_length);
+
+        int size_length = XBOX_number_length(fs.st_size);
+        ls_align.block_size = MAX(ls_align.block_size, size_length);
+    }
+    ls_info.ls_align = &ls_align;
+
+    printf("total %d\n", total_block_number / 2);
+
+    struct tm *tm;
+    char modify_time[20];
+    for (int i = 0; i < dir->count; i++) {
+        char *full_path = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
+        if (lstat(full_path, &fs) < 0) {
+            XBOX_free_directory(dir);
+            free(ls_info.infos);
+            perror("lstat");
+            return;
+        }
+
+        char *access_mode = XBOX_stat_access_mode(fs.st_mode);
+        // 格式化时间 TODO: 自由配置
+        tm = localtime(&fs.st_mtime);
         strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
-
-        printf("%s %*ld %s %s %*ld %s ",
-               st_mode_rwx,
-               max_link_length,
-               file_stat.st_nlink,
-               (pwd == NULL) ? "UNKNOWN" : pwd->pw_name,
-               (grp == NULL) ? "UNKNOWN" : grp->gr_name,
-               max_block_size_length,
-               file_stat.st_size,
+        printf("%s %*ld %-*s %-*s %*ld %s ",
+               access_mode,
+               ls_info.ls_align->link,
+               fs.st_nlink,
+               ls_align.user,
+               ls_info.infos[i].user,
+               ls_align.group,
+               ls_info.infos[i].group,
+               ls_align.block_size,
+               fs.st_size,
                modify_time);
         printf("%s", XBOX_filename_print(dir->dp[i]->name, full_path, dircolor_database));
         struct stat fs;
         if (lstat(full_path, &fs) != -1 && (S_ISLNK(fs.st_mode))) {
             char linkname[PATH_MAX];
-            if (readlink(full_path, linkname, sizeof(linkname)-1) == -1) {
+            memset(linkname, 0, PATH_MAX);
+            if (readlink(full_path, linkname, sizeof(linkname) - 1) == -1) {
                 perror("readlink");
                 continue;
             }
-            printf(" -> %s\n", XBOX_filename_print(linkname, linkname, dircolor_database));
+            printf(" -> %s\n",
+                   XBOX_filename_print(linkname, XBOX_path_join(dir->name, linkname, NULL), dircolor_database));
         } else {
             printf("\n");
         }
     }
     XBOX_free_directory(dir);
+    free(ls_info.infos);
     return;
 }
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "show help information", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, NULL, "--help", "show help information", NULL, "help"),
         XBOX_ARG_BOOLEAN(&all_files, "-a", "--all", "list all files", NULL, NULL),
         XBOX_ARG_BOOLEAN(&long_list, "-l", "--long-list", "use a long listing format", NULL, NULL),
         XBOX_ARG_BOOLEAN(&almost_all, "-A", NULL, "do not list implied . and ..", NULL, "almost-all"),
@@ -259,9 +310,10 @@ int main(int argc, const char **argv) {
                      NULL,
                      "--color",
                      "colorize the output; WHEN can be 'always' (default if omitted), 'auto', or "
-                     "'never'; more info below",
+                     "'never'",
                      "[=WHEN]",
                      NULL),
+        XBOX_ARG_BOOLEAN(&sort_reverse, "-r", "--reverse", "reverse order while sorting", NULL, NULL),
         XBOX_ARG_STRS_GROUP(&dirs, NULL, NULL, "source", NULL, "src"),
         XBOX_ARG_END()};
 

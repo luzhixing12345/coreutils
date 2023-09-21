@@ -10,6 +10,7 @@
 #pragma once
 
 #include <dirent.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -208,6 +209,7 @@ char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_
     char *color_code = NULL;
     struct stat fs;
     static char result[PATH_MAX];
+    memset(result, 0, PATH_MAX);
     // lstat 查看 link 本身, stat 查看 link 指向的 file
     if (lstat(full_path, &fs) == -1) {
         // 文件缺失
@@ -263,6 +265,7 @@ char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_
                 } else {
                     // 文件名后缀匹配
                     int dot_pos = XBOX_findChar(file_name, '.', -1);
+                    int suffix_match = 0;
                     if (dot_pos != -1) {
                         for (int i = 0; i < database->item_number; i++) {
                             if (strlen(database->dc_kvs[i].key) >= 2 && database->dc_kvs[i].key[0] == '*' &&
@@ -270,11 +273,13 @@ char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_
                                 // printf("[%s] [%s]\n", database->dc_kvs[i].key + 1, file_name + dot_pos);
                                 if (!strcmp(database->dc_kvs[i].key + 1, file_name + dot_pos)) {
                                     color_code = database->dc_kvs[i].value;
+                                    suffix_match = 1;
                                     break;
                                 }
                             }
                         }
-                    } else {
+                    }
+                    if (!suffix_match) {
                         color_code = (char *)"0";
                     }
                 }

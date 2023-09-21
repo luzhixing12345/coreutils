@@ -21,11 +21,16 @@ chmod o+w ow_dir
 mkdir st_dir
 chmod +t st_dir
 
+touch a.lz
+touch a.gif
+touch a.mkv
+touch a.aac
+
 tar -czf files.tar.gz file directory symlink fifo_pipe executable_file
 
 
 # 显示不同颜色的 ls 输出
-ls -l --color=auto
-# ../src/ls -l --color=auto
+# ls -l --color=auto
+../src/ls -l --color=always
 
 cd .. && rm -r temp
