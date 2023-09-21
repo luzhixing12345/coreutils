@@ -23,7 +23,7 @@ int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
 int sort_reverse = 0;
-char *color = "always";
+char *color = "auto";
 XBOX_dircolor_database *dircolor_database = NULL;
 
 typedef struct {

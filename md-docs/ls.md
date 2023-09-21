@@ -168,7 +168,7 @@ tmux 实际上是一个客户端服务器应用程序,因为用户可能希望�
 如果希望输出彩色文字, 可以在其前后添加形如 `ESC [ <n> m` 的控制序列字符串, 其中 ESC 指 \033 `<n>` 以表示不同的格式设置模式, 比如在控制台运行如下指令可以得到一个红色的字符串 123
 
 ```bash
-printf "\033[1;91m123\033[1;0m\n"
+printf "\033[91m123\033[0m\n"
 ```
 
 根据不同的 n 值可以控制前景色背景色, 现代的绝大部分虚拟终端仿真器都已经支持了比 Windows 控制台提供的 16 种颜色更多的颜色调色板, 以及支持了使用 RGB 的扩展颜色
@@ -257,7 +257,7 @@ wget https://raw.githubusercontent.com/luzhixing12345/coreutils/main/scripts/ls/
 如果想要修改默认 ls 对于不同类型文件的颜色可以直接修改 LS_COLORS, 例如可以使用如下方式在当前 shell 中修改 LS_COLORS 补充添加对于目录 di 的颜色
 
 ```bash
-export LS_COLORS="$LS_COLORS:di=01;31"
+export LS_COLORS="$LS_COLORS:di=01;31:"
 ```
 
 ![20230919083023](https://raw.githubusercontent.com/learner-lu/picbed/master/20230919083023.png)
