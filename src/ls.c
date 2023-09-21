@@ -12,7 +12,8 @@
 #include "xbox/xterm.h"
 #include "xbox/xutils.h"
 
-#define LS_ALIGN_SPACE 2
+#define LS_ALIGN_SPACE_NUMBER 2
+#define LS_ALIGN_SPACE "  "
 
 static int terminal_width = 0;
 
@@ -21,7 +22,7 @@ int all_files = 0;
 int almost_all = 0;
 int long_list = 0;
 char *color = "always";
-enum COLOR_OPTION color_option;
+XBOX_dircolor_database *dircolor_database = NULL;
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -64,7 +65,7 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
             if (index == dir->count) {
                 total_width += column_width;
             } else {
-                total_width += column_width + LS_ALIGN_SPACE;
+                total_width += column_width + LS_ALIGN_SPACE_NUMBER;
             }
             column_width = 0;
         }
@@ -144,15 +145,22 @@ void ls(const char *dir_name) {
             if (dp_index >= dir->count) {
                 continue;
             }
-            char *file_name =
-                XBOX_file_print(dir->dp[dp_index]->name, XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL));
-            printf("%-s", file_name);
-            int left_space_number = ls_col_width[j] - strlen(dir->dp[dp_index]->name);
-            for (int k = 0; k < left_space_number; k++) {
-                printf(" ");
+            // database 空说明不需要颜色
+            if (!dircolor_database) {
+                printf("%-*s", ls_col_width[j], dir->dp[dp_index]->name);
+            } else {
+                char *file_name = XBOX_filename_print(dir->dp[dp_index]->name,
+                                                      XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL),
+                                                      dircolor_database);
+                printf("%-s", file_name);
+                // 虚拟控制序列导致字符串长度变化, 需要额外计算剩余空格长度
+                int left_space_number = ls_col_width[j] - strlen(dir->dp[dp_index]->name);
+                for (int k = 0; k < left_space_number; k++) {
+                    printf(" ");
+                }
             }
             if (j != col_num - 1) {
-                printf("  ");
+                printf(LS_ALIGN_SPACE);
             }
         }
         printf("\n");
@@ -221,7 +229,8 @@ void ls_longlist(const char *dir_name) {
                max_block_size_length,
                file_stat.st_size,
                modify_time,
-               XBOX_file_print(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
+               XBOX_filename_print(
+                   dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
     }
     XBOX_free_directory(dir);
     return;
@@ -272,7 +281,6 @@ int main(int argc, const char **argv) {
     // 对于 stdout 为终端窗口的, 获取终端宽度用于后续计算
     if (isatty(STDOUT_FILENO)) {
         struct winsize terminal_size;
-
         if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &terminal_size) < 0) {
             perror("ioctl");
             XBOX_free_argparse(&parser);
@@ -282,13 +290,15 @@ int main(int argc, const char **argv) {
     }
 
     if (!strcmp(color, "always")) {
-        color_option = COLOR_ALWAYS;
+        XBOX_init_dc_database(&dircolor_database);
     } else if (!strcmp(color, "auto")) {
-        color_option = COLOR_AUTO;
+        if (isatty(STDOUT_FILENO)) {
+            XBOX_init_dc_database(&dircolor_database);
+        }
     } else if (!strcmp(color, "never")) {
-        color_option = COLOR_NEVER;
+        // do not use color
     } else {
-        print_invalid_color_option();
+        XBOX_print_invalid_color_option();
         XBOX_free_argparse(&parser);
         return 1;
     }
@@ -307,6 +317,9 @@ int main(int argc, const char **argv) {
         } else {
             ls(".");
         }
+    }
+    if (dircolor_database) {
+        XBOX_free_dc_database(dircolor_database);
     }
     XBOX_free_argparse(&parser);
     return 0;

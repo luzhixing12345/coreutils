@@ -1,5 +1,5 @@
 #include "xbox/xargparse.h"
-#include "xbox/xbox.h"
+#include "xbox/xterm.h"
 #include "xbox/xutils.h"
 
 static char **directories = NULL;
@@ -13,6 +13,7 @@ static int unsort = 0;
 static int reverse_sort = 0;
 static int dir_count = 0;
 static int file_count = 0;
+XBOX_dircolor_database *dircolor_database = NULL;
 
 static const char *file_end = "└";    // \u2514
 static const char *file_item = "──";  // \u2500\u2500
@@ -79,7 +80,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             temp = temp->parent;
         }
     } else {
-        printf("%s\n", XBOX_file_print(dir->name, dir->name));
+        printf("%s\n", XBOX_filename_print(dir->name, dir->name, dircolor_database));
     }
     // 深度 -L
     if (level > 0 && depth >= level) {
@@ -141,7 +142,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (no_color) {
                 printf("%s", dir->dp[i]->name);
             } else {
-                printf("%s", XBOX_file_print(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL)));
+                printf("%s", XBOX_filename_print(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
             }
             printf("\n");
         }
