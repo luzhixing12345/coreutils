@@ -17,6 +17,7 @@ const char *XBOX_VERSION = "XBOX v0.0.1";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "xstring.h"
 
 #define MAX(bind, b) ((bind) > (b) ? (bind) : (b))
 
@@ -182,21 +183,7 @@ char *XBOX_splice(const char *str, int start, int end) {
     return s;
 }
 
-/**
- * @brief 找到字符串中一个字符最先出现的位置
- *
- * @param str
- * @param c
- * @return int 未找到返回-1
- */
-int XBOX_findChar(const char *str, char c) {
-    int n = strlen(str);
-    for (int i = 0; i < n; i++) {
-        if (str[i] == c)
-            return i;
-    }
-    return -1;
-}
+
 
 int check_valid_character(const char *str) {
     int length = strlen(str);
@@ -669,7 +656,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
 
             if (option == NULL) {
                 if (parser->flag & XBOX_ARGPARSE_ENABLE_EQUAL) {
-                    int pos = XBOX_findChar(argv[i], '=');
+                    int pos = XBOX_findChar(argv[i], '=', 0);
                     if (pos != -1) {
                         char *name = XBOX_splice(argv[i], 0, pos - 1);
                         if (strlen(name) >= 2 && name[0] == '-') {

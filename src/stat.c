@@ -4,8 +4,8 @@
 #include <sys/sysmacros.h>
 #include <sys/vfs.h>
 #include <time.h>
-
-#include "xbox/xbox.h"
+#include "xbox/xargparse.h"
+#include "xbox/xutils.h"
 
 char **dirs;
 static int dereference = 0;

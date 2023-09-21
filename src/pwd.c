@@ -1,7 +1,10 @@
 
 
 #include "xbox/xargparse.h"
-#include "xbox/xbox.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <unistd.h>
 
 static int logical = 1;  // default
 static int physical = 0;

@@ -1,6 +1,7 @@
 
 #include <fcntl.h>
 #include <grp.h>
+#include <linux/limits.h>
 #include <pwd.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -188,9 +189,9 @@ void ls_longlist(const char *dir_name) {
     int max_link_length = 0;
     struct stat file_stat;
     for (int i = 0; i < dir->count; i++) {
-        if (stat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
+        if (lstat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
             XBOX_free_directory(dir);
-            perror("stat");
+            perror("lstat");
             return;
         }
         total_block_number += file_stat.st_blocks;
@@ -204,9 +205,10 @@ void ls_longlist(const char *dir_name) {
     struct group *grp;
 
     for (int i = 0; i < dir->count; i++) {
-        if (stat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &file_stat) < 0) {
+        char *full_path = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
+        if (lstat(full_path, &file_stat) < 0) {
             XBOX_free_directory(dir);
-            perror("stat");
+            perror("lstat");
             return;
         }
         char *st_mode_rwx = XBOX_stat_access_mode(file_stat.st_mode);
@@ -220,7 +222,7 @@ void ls_longlist(const char *dir_name) {
         tm = localtime(&file_stat.st_mtime);
         strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
 
-        printf("%s %*ld %s %s %*ld %s %s\n",
+        printf("%s %*ld %s %s %*ld %s ",
                st_mode_rwx,
                max_link_length,
                file_stat.st_nlink,
@@ -228,9 +230,19 @@ void ls_longlist(const char *dir_name) {
                (grp == NULL) ? "UNKNOWN" : grp->gr_name,
                max_block_size_length,
                file_stat.st_size,
-               modify_time,
-               XBOX_filename_print(
-                   dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
+               modify_time);
+        printf("%s", XBOX_filename_print(dir->dp[i]->name, full_path, dircolor_database));
+        struct stat fs;
+        if (lstat(full_path, &fs) != -1 && (S_ISLNK(fs.st_mode))) {
+            char linkname[PATH_MAX];
+            if (readlink(full_path, linkname, sizeof(linkname)-1) == -1) {
+                perror("readlink");
+                continue;
+            }
+            printf(" -> %s\n", XBOX_filename_print(linkname, linkname, dircolor_database));
+        } else {
+            printf("\n");
+        }
     }
     XBOX_free_directory(dir);
     return;

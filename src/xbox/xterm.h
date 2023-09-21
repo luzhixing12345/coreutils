@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "xstring.h"
 // 终端字体设置
 
 #define XBOX_TERM_FONT_DEFAULT "\033[0m"        // 默认字体
@@ -68,6 +69,7 @@ typedef struct {
     char *rs, *di, *ln, *mh, *pi, *so, *door, *bd, *cd;
     char *orp, *mi, *su, *sg, *ca, *tw, *ow, *st, *ex;
     dc_kv *dc_kvs;  // 所有 LS_COLORS 的键值对
+    int item_number;
 } XBOX_dircolor_database;
 
 /**
@@ -141,6 +143,7 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
         }
     }
     database->dc_kvs = (dc_kv *)malloc(sizeof(dc_kv) * item_number);
+    database->item_number = item_number;
     memset(database->dc_kvs, 0, sizeof(dc_kv));
     int p = 0;
     int index = 0;
@@ -258,7 +261,22 @@ char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_
                     // 文件组
                     color_code = database->sg;
                 } else {
-                    color_code = (char *)"0";
+                    // 文件名后缀匹配
+                    int dot_pos = XBOX_findChar(file_name, '.', -1);
+                    if (dot_pos != -1) {
+                        for (int i = 0; i < database->item_number; i++) {
+                            if (strlen(database->dc_kvs[i].key) >= 2 && database->dc_kvs[i].key[0] == '*' &&
+                                database->dc_kvs[i].key[1] == '.') {
+                                // printf("[%s] [%s]\n", database->dc_kvs[i].key + 1, file_name + dot_pos);
+                                if (!strcmp(database->dc_kvs[i].key + 1, file_name + dot_pos)) {
+                                    color_code = database->dc_kvs[i].value;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        color_code = (char *)"0";
+                    }
                 }
                 break;
             case S_IFSOCK:  // 套接字

@@ -1,8 +1,10 @@
 
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include "xbox/xbox.h"
+#include "xbox/xargparse.h"
 
 // 全局变量
 static int show_end = 0;
