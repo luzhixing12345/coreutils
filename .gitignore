@@ -67,3 +67,5 @@ test.py
 *.txt
 *.log
 .dircolors
+coreutils/
+coreutils.tar

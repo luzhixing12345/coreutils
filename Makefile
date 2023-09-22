@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -Wunused -Werror -Wformat-security
-TARGET = xbox
+TARGET = coreutils
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
 SRC_EXT = c
@@ -53,30 +53,17 @@ CP_FORMAT = "[cp]\t%-20s -> %s\n"
 MV_FORMAT = "[mv]\t%-20s -> %s\n"
 
 test:
+	$(MAKE) clean
+	$(MAKE) debug -j4
 	python test.py
 
 clean:
 	rm -f $(EXE) $(OBJ)
-
-clean_all:
-	rm -r $(TARGET)
-	$(MAKE) clean
-
-lib: $(obj)
-	ar rsv lib$(TARGET).a $(OBJ)
-	$(CC) -shared -o lib$(TARGET).so $(OBJ)
-
 release:
-	$(MAKE) lib
-	mkdir -p $(RELEASE)/bin
-	mkdir -p $(RELEASE)/include/$(RELEASE)
-	mkdir -p $(RELEASE)/lib
-	@cp -v $(EXE) $(RELEASE)/bin | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
-	@cp -v $(HEADER) $(RELEASE)/include/$(RELEASE) | awk -v format=$(CP_FORMAT) '{printf format, $$1, $$3}'
-	@mv -v $(LIB) $(RELEASE)/lib | awk -v format=$(MV_FORMAT) '{printf format, $$2, $$4}'
-
-tar:
+	$(MAKE) -j4
+	mkdir $(RELEASE)
+	@cp $(EXE) $(RELEASE)/ 
 	tar -cvf $(TARGET).tar $(RELEASE)/
 
-ignore:
-	python ignore.py
+clean_all:
+	rm -r $(RELEASE) $(RELEASE).tar
