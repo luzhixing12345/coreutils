@@ -17,6 +17,7 @@ const char *XBOX_VERSION = "XBOX v0.0.1";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "xstring.h"
 
 #define MAX(bind, b) ((bind) > (b) ? (bind) : (b))
@@ -26,7 +27,8 @@ const char *XBOX_VERSION = "XBOX v0.0.1";
 #define XBOX_REQUIRE_ARGUMENT 67
 #define XBOX_FORMAT_ERROR 68
 
-#define XBOX_MAX_LENGTH_BIAS 3
+#define XBOX_HELP_INFO_INTERVAL 3  // 帮助信息列间距
+#define XBOX_HELP_INFO_LENGTH 80   // 帮助信息 80 字符换行
 
 #define XBOX_ARGS_BUILD_ERROR "[Args Build Error]"
 #define XBOX_ARGS_PARSE_ERROR "[Args Parse Error]"
@@ -182,8 +184,6 @@ char *XBOX_splice(const char *str, int start, int end) {
     s[end - start + 1] = '\0';
     return s;
 }
-
-
 
 int check_valid_character(const char *str) {
     int length = strlen(str);
@@ -418,8 +418,8 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
     }
     printf("\n");
 
-    int left_width = 0;
-    int mid_width = 0;
+    int left_width = 0;  // 最左侧短参数对齐长度
+    int mid_width = 0;   // 中间长参数对齐长度
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->short_name && option->append_info) {
@@ -434,8 +434,8 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
         }
     }
     // printf("max_length = %d\n",max_length);
-    left_width += XBOX_MAX_LENGTH_BIAS;
-    mid_width += XBOX_MAX_LENGTH_BIAS;
+    left_width += XBOX_HELP_INFO_INTERVAL;
+    mid_width += XBOX_HELP_INFO_INTERVAL;
 
     if ((parser->flag & XBOX_ARGPARSE_SORT)) {
         qsort(parser->options, parser->args_number, sizeof(argparse_option), option_cmp);
@@ -460,9 +460,24 @@ void XBOX_argparse_info(XBOX_argparse *parser) {
             }
         }
         printf("%*s", mid_rest_space, "");
-
         if (option->help_info) {
-            printf("%s", option->help_info);
+            int help_info_length = strlen(option->help_info);
+            int right_help_info_space = XBOX_HELP_INFO_LENGTH - left_width - mid_width - 4;
+            if (help_info_length > right_help_info_space) {
+                char help_info[XBOX_HELP_INFO_LENGTH];
+                memset(help_info, 0, XBOX_HELP_INFO_LENGTH);
+                int p = 0;
+                while (help_info_length > right_help_info_space) {
+                    strncpy(help_info, option->help_info + p, right_help_info_space);
+                    help_info[right_help_info_space] = 0;
+                    p += right_help_info_space;
+                    printf("%s\n%*s", help_info, left_width + mid_width + 4, "");
+                    help_info_length -= right_help_info_space;
+                }
+                printf("%s", option->help_info + p);
+            } else {
+                printf("%s", option->help_info);
+            }
         }
         printf("\n");
     }
@@ -569,7 +584,7 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
     // 单个匹配
     if ((option->type == ARGPARSE_OPT_STR) || option->type == ARGPARSE_OPT_STR_GROUP) {
         if (option->match >= 1) {
-            free(*(char**)option->p);
+            free(*(char **)option->p);
         }
         *(char **)option->p = (char *)malloc(strlen(option->value) + 1);
         strcpy(*(char **)option->p, option->value);
@@ -827,6 +842,5 @@ int XBOX_ismatch(XBOX_argparse *parser, char *name) {
     fprintf(stderr, "%s: no matched name in options for [%s]\n", XBOX_ARGS_PARSE_WARNING, name);
     return 0;
 }
-
 
 #endif  // XBOX_XARGPARSE_H

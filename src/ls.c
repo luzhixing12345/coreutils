@@ -13,8 +13,9 @@
 #include "xbox/xterm.h"
 #include "xbox/xutils.h"
 
-#define LS_ALIGN_SPACE_NUMBER 2
-#define LS_ALIGN_SPACE "  "
+// 列间距
+#define LS_INTERVAL_SPACE_NUMBER 2
+#define LS_INTERVAL_SPACE "  "
 
 static int terminal_width = 0;
 
@@ -57,7 +58,7 @@ static int sort_cmp(const void *p1, const void *p2) {
  * @param terminal_width
  * @return int
  */
-int calculaterow(XBOX_Dir *dir, int terminal_width) {
+int calculate_row(XBOX_Dir *dir, int terminal_width) {
     int row = 1;
     int total_width = 0;
 
@@ -69,6 +70,10 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
     //     printf("file_width[%d]:[%s] = %d\n",i,dir->dp[i]->name,file_widths[i]);
     // }
     for (;; row++) {
+        if (row == dir->count) {
+            // 到达上限, 直接返回
+            return row;
+        }
         int index = 0;
         int column_width = 0;
         // printf("terminal_width = %d\n",terminal_width);
@@ -82,12 +87,12 @@ int calculaterow(XBOX_Dir *dir, int terminal_width) {
             }
 
             // GNU coreutils ls: 最后一列计算有间隔
-            total_width += column_width + LS_ALIGN_SPACE_NUMBER;
+            total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
             // // 最后一列无间隔
             // if (index == dir->count) {
             //     total_width += column_width;
             // } else {
-            //     total_width += column_width + LS_ALIGN_SPACE_NUMBER;
+            //     total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
             // }
             column_width = 0;
         }
@@ -135,9 +140,25 @@ void ls(const char *dir_name) {
         return;
     }
 
-    int row = calculaterow(dir, terminal_width);
+    int row = calculate_row(dir, terminal_width);
 
-    // 计算每一列的宽度
+    // 对于行数和目录文件数相同的情况, 全部竖排即可, 不需要计算对齐
+    if (row == dir->count) {
+        for (int i = 0; i < dir->count; i++) {
+            if (!dircolor_database) {
+                printf("%s\n", dir->dp[i]->name);
+            } else {
+                printf("%s\n",
+                       XBOX_filename_print(
+                           dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
+            }
+        }
+        XBOX_free_directory(dir);
+        return;
+    }
+
+    // 计算每一列的宽度, 用于后续的对齐计算
+    // 这里不放在 calculate_row 中计算是想减少内存读写次数, 尽管最后重复计算了一次宽度
     int col_num = (dir->count + row - 1) / row;
     int *ls_col_width = malloc(sizeof(int) * col_num);
 
@@ -169,8 +190,10 @@ void ls(const char *dir_name) {
     int dp_index = 0;
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col_num; j++) {
+            // 因为是按行输出, 所以需要考虑优先计算当前行输出的文件名对应的 index
             dp_index = row * j + i;
             if (dp_index >= dir->count) {
+                // 最后一列后几个可能为空
                 continue;
             }
             // database 空说明不需要颜色
@@ -188,7 +211,7 @@ void ls(const char *dir_name) {
                 }
             }
             if (j != col_num - 1) {
-                printf(LS_ALIGN_SPACE);
+                printf(LS_INTERVAL_SPACE);
             }
         }
         printf("\n");
