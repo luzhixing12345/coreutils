@@ -13,8 +13,7 @@ int print_database = 0;
 int bash_dircolors = 0;
 int csh_dircolors = 0;
 
-// coreutils 采用的是 local.mk + dcgen 为 dircolors.c 中的 G_line 在编译前做批量替换
-// 将 dircolors.hin 的内容直接输入进去
+// coreutils 的解决办法是读取 dircolors.hin 的内容将 dircolors.c 中的 G_line 在编译前做批量替换
 // 这里简化了这一步, 直接写死在文件里
 
 const static char *builtin_dircolors_str =

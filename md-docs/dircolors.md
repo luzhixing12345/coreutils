@@ -26,9 +26,44 @@ alias l='ls -CF'
 
 > 这里我一直有点没有理解, 为什么 ls 的默认 color 选项是 `always`, 还需要在 bashrc 中手动 alias, 因为明显 auto 比 always 做的更好...
 
-```bash
-strace -e dircolors -b 2>&1 | grep openat
+## dircolors.hin 文件解析
+
+原版 coreutils 的解决办法是读取 dircolors.hin 的内容将 dircolors.c 中的 G_line 在编译前做批量替换, 将 dircolors.hin 的内容在编译前替换到文件中
+
+笔者这里简化了这一步, 直接将 dircolors.hin 的内容复制并写死在 dircolors.c 中
+
+然后就是依次读取字符串进行解析, 这个文法规则很简单, 就是字符串 + 空格, # 开头为注释
+
+> 需要注意的是有一些字符串代表了特定的含义, 如下 18 个特殊的文件属性, 需要单独判断替换. 其余的以 `.` 开头的直接当作文件后缀名处理
+
+```c
+typedef struct {
+    char *full_name;
+    char *short_name;
+    int name_length;
+} dc_map;
+
+const dc_map builtin_dc_map[18] = {{"RESET", "rs", 5},
+                                   {"DIR", "di", 3},
+                                   {"LINK", "ln", 4},
+                                   {"MULTIHARDLINK", "mh", 13},
+                                   {"FIFO", "pi", 4},
+                                   {"SOCK", "so", 4},
+                                   {"DOOR", "do", 4},
+                                   {"BLK", "bd", 3},
+                                   {"CHR", "cd", 3},
+                                   {"ORPHAN", "or", 6},
+                                   {"MISSING", "mi", 7},
+                                   {"SETUID", "su", 6},
+                                   {"SETGID", "sg", 6},
+                                   {"CAPABILITY", "ca", 10},
+                                   {"STICKY_OTHER_WRITABLE", "tw", 21},
+                                   {"OTHER_WRITABLE", "ow", 14},
+                                   {"STICKY", "st", 6},
+                                   {"EXEC", "ex", 4}};
 ```
+
+> 不过原版的 dircolors -b 参数可以带一个文件路径, 这里省略了...
 
 ## 参考
 
