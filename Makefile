@@ -30,7 +30,6 @@ debug: all
 $(EXE): %: %.o
 	$(CC) $< -o $@
 
-
 %.o: %.c $(HEADER)
 	$(CC) $(CFLAGS) -c $< -o $@
 

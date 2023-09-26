@@ -63,14 +63,16 @@ enum argparse_flag {
 
 typedef struct {
     enum argparse_option_type type;
-    void *p;
+    void *p;            // 用户绑定的值
     char *short_name;   // 短名字
     char *long_name;    // 长名字
     char *help_info;    // 帮助信息
     char *append_info;  // 补充信息
     char *name;         // 记录用的名字
-    char *value;
-    int match;
+    // 下面三个字段由内部维护
+    char *value;  // 匹配的值
+    int pos;      // 匹配的位置
+    int match;    // 匹配的次数
 } argparse_option;
 
 /**
@@ -658,6 +660,8 @@ void value_pass(XBOX_argparse *parser, argparse_option *option) {
 }
 
 void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
+    // 不使用 i 作为匹配位置的索引, 因为需要考虑粘连参数的先后顺序 -abc
+    int match_pos = 1;
     for (int i = 1; i < argc; i++) {
         int argv_length = strlen(argv[i]);
         if (argv_length >= 2 && argv[i][0] == '-') {
@@ -689,6 +693,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
                             }
                             char *value = XBOX_splice(argv[i], pos + 1, -1);
                             option->value = value;
+                            option->pos = match_pos++;
                             value_pass(parser, option);
                             continue;
                         }
@@ -699,13 +704,14 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
                     option = check_argparse_soptions(parser, short_name);
                     free(short_name);
                     if (option) {
-                        // boolean 类型的不去判断粘连情况
+                        // 只判断非 boolean 类型的粘连情况
                         if (option->type != ARGPARSE_OPT_BOOLEAN) {
                             if (option->value) {
                                 free(option->value);
                             }
                             char *value = XBOX_splice(argv[i], 2, -1);
                             option->value = value;
+                            option->pos = match_pos++;
                             value_pass(parser, option);
                             continue;
                         }
@@ -744,6 +750,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
                                 exit(XBOX_FORMAT_ERROR);
                             } else {
                                 option->match = 1;
+                                option->pos = match_pos++;
                                 if (option->p) {
                                     *(int *)option->p = 1;
                                 }
@@ -759,6 +766,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
             } else {
                 if (option->type == ARGPARSE_OPT_BOOLEAN) {
                     option->match = 1;
+                    option->pos = match_pos++;
                     if (option->p) {
                         *(int *)option->p = 1;
                     }
@@ -783,6 +791,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
                 }
                 option->value = (char *)malloc(sizeof(char) * (strlen(argv[i + 1]) + 1));
                 strcpy(option->value, argv[i + 1]);
+                option->pos = match_pos++;
                 value_pass(parser, option);
                 // printf("matched [%s]:[%s]\n", option->long_name, argv[i + 1]);
                 i++;
@@ -819,24 +828,28 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
  * @return int 如果未匹配返回0; 如果匹配,返回值为匹配的个数
  */
 int XBOX_ismatch(XBOX_argparse *parser, char *name) {
-    if (strlen(name) > 2) {
-        if (name[0] == '-' && name[1] == '-') {
-            if (!(parser->flag & XBOX_ARGPARSE_IGNORE_WARNING)) {
-                char *new_name = XBOX_splice(name, 2, -1);
-                fprintf(stderr,
-                        "%s: detected [%s] in XBOX_ismatch, do you mean [%s]?\n",
-                        XBOX_ARGS_PARSE_WARNING,
-                        name,
-                        new_name);
-                free(new_name);
-            }
-        }
-    }
-
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->name && !strcmp(option->name, name)) {
             return option->match;
+        }
+    }
+    fprintf(stderr, "%s: no matched name in options for [%s]\n", XBOX_ARGS_PARSE_WARNING, name);
+    return 0;
+}
+
+/**
+ * @brief 查找参数匹配的位置
+ * 
+ * @param parser 
+ * @param name 
+ * @return int 
+ */
+int XBOX_match_pos(XBOX_argparse *parser, char *name) {
+    for (int i = 0; i < parser->args_number; i++) {
+        argparse_option *option = &(parser->options[i]);
+        if (option->name && !strcmp(option->name, name)) {
+            return option->pos;
         }
     }
     fprintf(stderr, "%s: no matched name in options for [%s]\n", XBOX_ARGS_PARSE_WARNING, name);

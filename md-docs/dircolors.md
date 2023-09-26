@@ -22,10 +22,12 @@ alias la='ls -A'
 alias l='ls -CF'
 ```
 
-如果 /usr/bin/dircolors 文件存在, 则首先判断根目录下是否有 .dircolors, 如果存在则使用 .dircolors 作为配置文件, 否则使用 dircolors 的默认 bash 作为配置, 然后对于 ls grep 设置别名默认开启 --color=auto 的颜色显示
+如果 /usr/bin/dircolors 文件存在, 则首先判断根目录下是否有 .dircolors, 如果存在则使用 .dircolors 作为配置文件, 否则使用 dircolors 的默认 bash 作为配置, **然后对于 ls grep 设置别名默认开启 --color=auto 的颜色显示**
+
+> 这里我一直有点没有理解, 为什么 ls 的默认 color 选项是 `always`, 还需要在 bashrc 中手动 alias, 因为明显 auto 比 always 做的更好...
 
 ```bash
-strace -e trace=open dircolors -b
+strace -e dircolors -b 2>&1 | grep openat
 ```
 
 ## 参考

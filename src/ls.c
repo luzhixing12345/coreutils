@@ -53,9 +53,8 @@ static int sort_cmp(const void *p1, const void *p2) {
 /**
  * @brief 根据终端宽度以及目录文件量计算应该取多少行
  *
- * @param dir
- * @param col
- * @param terminal_width
+ * @param dir 目录
+ * @param terminal_width 当前的终端宽度
  * @return int
  */
 int calculate_row(XBOX_Dir *dir, int terminal_width) {
