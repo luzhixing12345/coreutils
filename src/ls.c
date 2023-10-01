@@ -27,22 +27,13 @@ int sort_reverse = 0;
 char *color = "auto";
 XBOX_dircolor_database *dircolor_database = NULL;
 
+// 对齐长度
 typedef struct {
     int link;
     int user;
     int group;
     int block_size;
 } longlist_align;
-
-typedef struct {
-    char *user;
-    char *group;
-} longlist_item_info;
-
-typedef struct {
-    longlist_align *ls_align;
-    longlist_item_info *infos;
-} longlist_info;
 
 static int sort_cmp(const void *p1, const void *p2) {
     XBOX_File **dp1 = (XBOX_File **)p1;
@@ -85,6 +76,8 @@ int calculate_row(XBOX_Dir *dir, int terminal_width) {
                 }
             }
 
+            // GNU coreutils ls: 最后一列计算有间隔
+            // total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
             // 最后一列无间隔
             if (index == dir->count) {
                 total_width += column_width;
@@ -234,8 +227,6 @@ void ls_longlist(const char *dir_name) {
 
     int total_block_number = 0;
 
-    longlist_info ls_info;
-    ls_info.infos = (longlist_item_info *)malloc(sizeof(longlist_item_info) * dir->count);
     struct stat fs;
 
     struct passwd *pwd;
@@ -245,7 +236,6 @@ void ls_longlist(const char *dir_name) {
     for (int i = 0; i < dir->count; i++) {
         if (lstat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &fs) < 0) {
             XBOX_free_directory(dir);
-            free(ls_info.infos);
             perror("lstat");
             return;
         }
@@ -253,52 +243,76 @@ void ls_longlist(const char *dir_name) {
 
         pwd = getpwuid(fs.st_uid);
         grp = getgrgid(fs.st_gid);
-        ls_info.infos[i].user = !pwd ? "UNKNOWN" : pwd->pw_name;
-        ls_info.infos[i].group = !grp ? "UNKNOWN" : grp->gr_name;
+
+        char *user_name, *group_name;
+        user_name = !pwd ? "UNKNOWN" : pwd->pw_name;
+        group_name = !grp ? "UNKNOWN" : grp->gr_name;
 
         // 计算对齐所需要的长度
         int link_length = XBOX_number_length(fs.st_nlink);
         ls_align.link = MAX(ls_align.link, link_length);
 
-        int user_length = strlen(ls_info.infos[i].user);
+        int user_length = strlen(user_name);
         ls_align.user = MAX(ls_align.user, user_length);
 
-        int group_length = strlen(ls_info.infos[i].group);
+        int group_length = strlen(group_name);
         ls_align.group = MAX(ls_align.group, group_length);
 
         int size_length = XBOX_number_length(fs.st_size);
         ls_align.block_size = MAX(ls_align.block_size, size_length);
     }
-    ls_info.ls_align = &ls_align;
 
     printf("total %d\n", total_block_number / 2);
 
     struct tm *tm;
+    time_t current_time;
+    time(&current_time);
+    // 获取当前时间的年份
+    struct tm *tm_current = localtime(&current_time);
+    int current_year = tm_current->tm_year;
+
     char modify_time[20];
     for (int i = 0; i < dir->count; i++) {
         char *full_path = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
         if (lstat(full_path, &fs) < 0) {
             XBOX_free_directory(dir);
-            free(ls_info.infos);
             perror("lstat");
             return;
         }
 
         char *access_mode = XBOX_stat_access_mode(fs.st_mode);
-        // 格式化时间 TODO: 自由配置
-        tm = localtime(&fs.st_mtime);
-        strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
-        printf("%s %*ld %-*s %-*s %*ld %s ",
+
+        pwd = getpwuid(fs.st_uid);
+        grp = getgrgid(fs.st_gid);
+
+        char *user_name, *group_name;
+        user_name = !pwd ? "UNKNOWN" : pwd->pw_name;
+        group_name = !grp ? "UNKNOWN" : grp->gr_name;
+
+        printf("%s %*ld %-*s %-*s %*ld ",
                access_mode,
-               ls_info.ls_align->link,
+               ls_align.link,
                fs.st_nlink,
                ls_align.user,
-               ls_info.infos[i].user,
+               user_name,
                ls_align.group,
-               ls_info.infos[i].group,
+               group_name,
                ls_align.block_size,
-               fs.st_size,
-               modify_time);
+               fs.st_size);
+
+        // 格式化时间 TODO: 自由配置
+        tm = localtime(&fs.st_mtime);
+
+        if (tm->tm_year == current_year) {
+            strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
+            printf("%s ", modify_time);
+        } else {
+            strftime(modify_time, sizeof(modify_time), "%b %e", tm);
+            printf("%s %5d ", modify_time, tm->tm_year + 1900);
+        }
+
+        
+
         printf("%s", XBOX_filename_print(dir->dp[i]->name, full_path, dircolor_database));
         struct stat fs;
         if (lstat(full_path, &fs) != -1 && (S_ISLNK(fs.st_mode))) {
@@ -315,7 +329,6 @@ void ls_longlist(const char *dir_name) {
         }
     }
     XBOX_free_directory(dir);
-    free(ls_info.infos);
     return;
 }
 
