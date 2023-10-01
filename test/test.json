@@ -3,13 +3,17 @@
         "files": [
             ".",
             "./src",
-            "./testfiles",
             "md-docs/",
-            "docs"
+            "docs",
+            "~",
+            "/proc",
+            "/etc",
+            ""
         ],
         "args": [
             "-l",
-            "-a"
+            "-a",
+            "-la"
         ]
     }
 }

@@ -60,10 +60,8 @@ a.c
 notes/
 
 test/file
-testfiles/*.txt
 
 ignore.py
-test.py
 *.txt
 *.log
 .dircolors

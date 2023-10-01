@@ -54,7 +54,7 @@ MV_FORMAT = "[mv]\t%-20s -> %s\n"
 test:
 	$(MAKE) clean
 	$(MAKE) debug -j4
-	python test.py
+	python test/test.py
 
 clean:
 	rm -f $(EXE) $(OBJ)

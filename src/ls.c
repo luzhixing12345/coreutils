@@ -85,14 +85,12 @@ int calculate_row(XBOX_Dir *dir, int terminal_width) {
                 }
             }
 
-            // GNU coreutils ls: 最后一列计算有间隔
-            total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
-            // // 最后一列无间隔
-            // if (index == dir->count) {
-            //     total_width += column_width;
-            // } else {
-            //     total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
-            // }
+            // 最后一列无间隔
+            if (index == dir->count) {
+                total_width += column_width;
+            } else {
+                total_width += column_width + LS_INTERVAL_SPACE_NUMBER;
+            }
             column_width = 0;
         }
         if (total_width <= terminal_width) {
