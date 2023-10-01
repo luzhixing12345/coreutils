@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-
 #define XBOX_LOG(fmt, ...) printf("[%s]:[%4d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define XBOX_TYPE(t) #t
 #define XBOX_NAME(name) _##name
@@ -34,8 +33,8 @@
 #define XBOX_IS_DIR(dp) (dp->type == DT_DIR)
 
 typedef struct XBOX_File {
-    unsigned char type;  // 文件类型
-    char name[NAME_MAX];      // 文件名
+    unsigned char type;   // 文件类型
+    char name[NAME_MAX];  // 文件名
 } XBOX_File;
 
 typedef struct XBOX_Dir {
@@ -63,13 +62,13 @@ XBOX_Dir* XBOX_open_dir(const char* path, int flag) {
     dir = opendir(path);
     if (dir == NULL) {
         // 12 是 "open failed " 的长度
-        static char error_info[PATH_MAX+12];
-        memset(error_info, 0, PATH_MAX+12);
+        static char error_info[PATH_MAX + 12];
+        memset(error_info, 0, PATH_MAX + 12);
         sprintf(error_info, "open failed %s", path);
         perror(error_info);
         exit(1);
     }
-    
+
     XBOX_Dir* directory = (XBOX_Dir*)malloc(sizeof(XBOX_Dir));
     memset(directory, 0, sizeof(XBOX_Dir));
     while ((entry = readdir(dir)) != NULL) {
@@ -188,8 +187,8 @@ const char* XBOX_get_last_path(const char* path) {
  * @return char*
  */
 char* XBOX_stat_access_mode(mode_t mode) {
-    static char buf[12];
-    strcpy(buf, "-rwxrwxrwx");
+    static char buf[11];
+    memset(buf, 0, 11);
     if (S_ISREG(mode)) {
         buf[0] = '-';
     } else if (S_ISDIR(mode)) {
@@ -201,26 +200,25 @@ char* XBOX_stat_access_mode(mode_t mode) {
     } else if (S_ISFIFO(mode)) {
         buf[0] = 'p';
     } else if (S_ISLNK(mode)) {
-        buf[0] = 'l';
-        return buf;
+        return (char*)"lrwxrwxrwx";
     } else if (S_ISSOCK(mode)) {
         buf[0] = 's';
     } else {
         buf[0] = '-';
         // UNKNOWN type?
     }
-    mode_t umask_val = umask(0);                // 获取当前 umask 值
-    umask(umask_val);                           // 恢复原来的 umask 值
-    mode_t effective_mode = mode & ~umask_val;  // 计算生效的权限值
-    buf[1] = (effective_mode & S_IRUSR) ? 'r' : '-';
-    buf[2] = (effective_mode & S_IWUSR) ? 'w' : '-';
-    buf[3] = (effective_mode & S_IXUSR) ? 'x' : '-';
-    buf[4] = (effective_mode & S_IRGRP) ? 'r' : '-';
-    buf[5] = (effective_mode & S_IWGRP) ? 'w' : '-';
-    buf[6] = (effective_mode & S_IXGRP) ? 'x' : '-';
-    buf[7] = (effective_mode & S_IROTH) ? 'r' : '-';
-    buf[8] = (effective_mode & S_IWOTH) ? 'w' : '-';
-    buf[9] = (effective_mode & S_IXOTH) ? 'x' : '-';
+    // mode_t umask_val = umask(0);                // 获取当前 umask 值
+    // umask(umask_val);                           // 恢复原来的 umask 值
+    // mode_t effective_mode = mode & ~umask_val;  // 计算生效的权限值
+    buf[1] = (mode & S_IRUSR) ? 'r' : '-';
+    buf[2] = (mode & S_IWUSR) ? 'w' : '-';
+    buf[3] = (mode & S_IXUSR) ? 'x' : '-';
+    buf[4] = (mode & S_IRGRP) ? 'r' : '-';
+    buf[5] = (mode & S_IWGRP) ? 'w' : '-';
+    buf[6] = (mode & S_IXGRP) ? 'x' : '-';
+    buf[7] = (mode & S_IROTH) ? 'r' : '-';
+    buf[8] = (mode & S_IWOTH) ? 'w' : '-';
+    buf[9] = (mode & S_IXOTH) ? 'x' : '-';
     buf[10] = '\0';
     return buf;
 }

@@ -3,6 +3,7 @@
 #include <grp.h>
 #include <linux/limits.h>
 #include <pwd.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -264,12 +265,13 @@ void ls_longlist(const char *dir_name) {
 
     printf("total %d\n", total_block_number / 2);
 
-    struct tm *tm;
+    struct tm *tm_modify;
     time_t current_time;
     time(&current_time);
-    // 获取当前时间的年份
+    // // 获取当前时间的年份
     struct tm *tm_current = localtime(&current_time);
     int current_year = tm_current->tm_year;
+    int current_month = tm_current->tm_mon;
 
     char modify_time[20];
     for (int i = 0; i < dir->count; i++) {
@@ -301,17 +303,16 @@ void ls_longlist(const char *dir_name) {
                fs.st_size);
 
         // 格式化时间 TODO: 自由配置
-        tm = localtime(&fs.st_mtime);
-
-        if (tm->tm_year == current_year) {
-            strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm);
+        tm_modify = localtime(&fs.st_mtime);
+        int months_difference = (current_year - tm_modify->tm_year) * 12 +
+                           (current_month - tm_modify->tm_mon);
+        if (months_difference <= 6) {
+            strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm_modify);
             printf("%s ", modify_time);
         } else {
-            strftime(modify_time, sizeof(modify_time), "%b %e", tm);
-            printf("%s %5d ", modify_time, tm->tm_year + 1900);
+            strftime(modify_time, sizeof(modify_time), "%b %e", tm_modify);
+            printf("%s %5d ", modify_time, tm_modify->tm_year + 1900);
         }
-
-        
 
         printf("%s", XBOX_filename_print(dir->dp[i]->name, full_path, dircolor_database));
         struct stat fs;

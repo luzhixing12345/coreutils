@@ -265,6 +265,10 @@ export LS_COLORS="$LS_COLORS:di=01;31:"
 
 修改 LS_COLORS 的另一个方式是通过 dircolors, 实际上 shell 启动时的 $LS_COLORS 就是 dircolors 来进行设置的, 具体信息请阅读下一部分 dircolors
 
+## 日期显示
+
+关于日期显示需要参考官方文档: [gnu Formatting-file-timestamps](https://www.gnu.org/software/coreutils/manual/html_node/Formatting-file-timestamps.html), 具体来说是六个月内没有被访问过的, 则显示年份, 否则显示具体时间
+
 ## 参考
 
 - [ls command](https://wangchujiang.com/linux-command/c/ls.html)
