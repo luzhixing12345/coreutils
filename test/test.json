@@ -5,8 +5,7 @@
             "./src",
             "md-docs/",
             "docs",
-            "~",
-            "/proc",
+            "./test",
             "/etc",
             ""
         ],

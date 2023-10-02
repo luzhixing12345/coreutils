@@ -268,7 +268,10 @@ void ls_longlist(const char *dir_name) {
     struct tm *tm_modify;
     time_t current_time;
     time(&current_time);
-    // // 获取当前时间的年份
+    // 获取当前时间的年份和月份
+    // 这里需要提前计算是因为 localtime 返回的是一个指针
+    // 后面需要根据每一个文件执行 tm_modify = localtime(&fs.st_mtime);
+    // 此时 tm_current 的值同样会被刷新
     struct tm *tm_current = localtime(&current_time);
     int current_year = tm_current->tm_year;
     int current_month = tm_current->tm_mon;
