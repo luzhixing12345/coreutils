@@ -1,6 +1,8 @@
 
 #include "xutils.h"
+
 #include <linux/limits.h>
+#include <sys/stat.h>
 
 /**
  * @brief 打开一个目录并读取其中所有的文件和目录
@@ -69,8 +71,8 @@ XBOX_Dir* XBOX_opendir(const char* path, int flag) {
 
 /**
  * @brief 释放目录分配的内存
- * 
- * @param dir 
+ *
+ * @param dir
  */
 void XBOX_freedir(XBOX_Dir* directory) {
     directory->parent = NULL;
@@ -149,10 +151,28 @@ const char* XBOX_get_last_path(const char* path) {
 char* XBOX_stat_access_mode(mode_t mode) {
     static char buf[11];
     memset(buf, 0, 11);
+    buf[1] = (mode & S_IRUSR) ? 'r' : '-';
+    buf[2] = (mode & S_IWUSR) ? 'w' : '-';
+    buf[3] = (mode & S_IXUSR) ? 'x' : '-';
+    buf[4] = (mode & S_IRGRP) ? 'r' : '-';
+    buf[5] = (mode & S_IWGRP) ? 'w' : '-';
+    buf[6] = (mode & S_IXGRP) ? 'x' : '-';
+    buf[7] = (mode & S_IROTH) ? 'r' : '-';
+    buf[8] = (mode & S_IWOTH) ? 'w' : '-';
+    buf[9] = (mode & S_IXOTH) ? 'x' : '-';
+    buf[10] = '\0';
     if (S_ISREG(mode)) {
         buf[0] = '-';
+        if (mode & S_ISUID) {
+            buf[3] = 'S';
+        } else if (mode & S_ISGID) {
+            buf[6] = 'S';
+        }
     } else if (S_ISDIR(mode)) {
         buf[0] = 'd';
+        if (mode & S_ISVTX) {
+            buf[9] = 't';
+        }
     } else if (S_ISCHR(mode)) {
         buf[0] = 'c';
     } else if (S_ISBLK(mode)) {
@@ -170,24 +190,15 @@ char* XBOX_stat_access_mode(mode_t mode) {
     // mode_t umask_val = umask(0);                // 获取当前 umask 值
     // umask(umask_val);                           // 恢复原来的 umask 值
     // mode_t effective_mode = mode & ~umask_val;  // 计算生效的权限值
-    buf[1] = (mode & S_IRUSR) ? 'r' : '-';
-    buf[2] = (mode & S_IWUSR) ? 'w' : '-';
-    buf[3] = (mode & S_IXUSR) ? 'x' : '-';
-    buf[4] = (mode & S_IRGRP) ? 'r' : '-';
-    buf[5] = (mode & S_IWGRP) ? 'w' : '-';
-    buf[6] = (mode & S_IXGRP) ? 'x' : '-';
-    buf[7] = (mode & S_IROTH) ? 'r' : '-';
-    buf[8] = (mode & S_IWOTH) ? 'w' : '-';
-    buf[9] = (mode & S_IXOTH) ? 'x' : '-';
-    buf[10] = '\0';
+
     return buf;
 }
 
 /**
  * @brief 获取一个数字的长度
- * 
- * @param number 
- * @return int 
+ *
+ * @param number
+ * @return int
  */
 int XBOX_number_length(long long number) {
     int size_length = 0;
@@ -197,4 +208,3 @@ int XBOX_number_length(long long number) {
     }
     return size_length;
 }
-
