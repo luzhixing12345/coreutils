@@ -7,8 +7,6 @@
  *@Github: luzhixing12345
  */
 
-#pragma once
-
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
@@ -16,26 +14,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "xstring.h"
-// 终端字体设置
-
-#define XBOX_TERM_FONT_DEFAULT "\033[0m"        // 默认字体
-#define XBOX_TERM_FONT_BOLD "\033[1m"           // 高亮前景色
-#define XBOX_TERM_FONT_NO_BLOD "\033[22m"       // 取消高亮前景色
-#define XBOX_TERM_FONT_UNDERLINE "\033[4m"      // 下划线
-#define XBOX_TERM_FONT_NO_UNDERLINE "\033[24m"  // 取消下划线
-
-#define XBOX_TERM_COLOR_BLACK "\033[30m"
-#define XBOX_TERM_COLOR_RED "\033[31m"
-#define XBOX_TERM_COLOR_GREEN "\033[32m"
-#define XBOX_TERM_COLOR_YELLOW "\033[33m"
-#define XBOX_TERM_COLOR_BLUE "\033[34m"
-#define XBOX_TERM_COLOR_MAGENTA "\033[35m"  // 品红色
-#define XBOX_TERM_COLOR_CYAN "\033[36m"
-#define XBOX_TERM_COLOR_WHITE "\033[37m"
-#define XBOX_TERM_COLOR_EXTEND "\033[38m"  // 前景色扩展
-#define XBOX_TERM_COLOR_DEFAULT "\033[39m"
+#include "xterm.h"
 
 #define DEFUALT_LS_COLORS                                                        \
     "rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;" \
@@ -48,30 +27,6 @@ void XBOX_print_invalid_color_option() {
     printf("- 'never', 'no', 'none'\n");
     printf("- 'auto', 'tty', 'if-tty'\n");
 }
-
-typedef struct {
-    char *font_type;
-    char *front_color;  // 前景色
-    char *back_color;   // 背景色
-    char *front_rgb;
-    char *back_rgb;
-    char *word;  // 文本信息
-} XBOX_term_word;
-
-// 最大长度, 一般来说后缀和虚拟控制序列序号都不会很长, 不想再 malloc/free 了
-#define MAX_DC_KV_LENGTH 16
-
-typedef struct {
-    char key[MAX_DC_KV_LENGTH];
-    char value[MAX_DC_KV_LENGTH];
-} dc_kv;
-
-typedef struct {
-    char *rs, *di, *ln, *mh, *pi, *so, *door, *bd, *cd;
-    char *orp, *mi, *su, *sg, *ca, *tw, *ow, *st, *ex;
-    dc_kv *dc_kvs;  // 所有 LS_COLORS 的键值对
-    int item_number;
-} XBOX_dircolor_database;
 
 /**
  * @brief 终端彩色打印
@@ -168,8 +123,8 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
             if (offset != -1) {
                 // 结构体内存地址赋值
                 // a little tricky
-                char *p = (char *)&(database->dc_kvs[index].value);
-                *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)p;
+                char *bias = (char *)&(database->dc_kvs[index].value);
+                *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)bias;
             }
             index++;
         }
@@ -183,8 +138,8 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
         if (offset != -1) {
             // 结构体内存地址赋值
             // a little tricky
-            char *p = (char *)&(database->dc_kvs[index].value);
-            *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)p;
+            char *bias = (char *)&(database->dc_kvs[index].value);
+            *(u_int64_t *)((char *)database + offset * sizeof(char *)) = (u_int64_t)bias;
         }
     }
     // for (int i=0;i<index;i++) {
@@ -197,7 +152,7 @@ void parse_ls_colors(char *lscolors_str, XBOX_dircolor_database *database) {
 /**
  * @brief 初始化 dircolors 的颜色数据库
  *
- * @param database (need free)
+ * @param database 需要调用 XBOX_free_dc_database
  */
 void XBOX_init_dc_database(XBOX_dircolor_database **database) {
     char *lscolors_str = getenv("LS_COLORS");
@@ -208,18 +163,25 @@ void XBOX_init_dc_database(XBOX_dircolor_database **database) {
     parse_ls_colors(lscolors_str, *database);
 }
 
+/**
+ * @brief 释放 dircolors 数据库
+ * 
+ * @param database 
+ */
 void XBOX_free_dc_database(XBOX_dircolor_database *database) {
     free(database->dc_kvs);
     free(database);
 }
 
 /**
- * @brief 使用 ASNI 虚拟控制序列终端彩色打印
- *
- * @param word 打印的字
- * @param full_path 全路径
+ * @brief 使用虚拟控制序列打印文件名
+ * 
+ * @param file_name 
+ * @param full_path 
+ * @param database 
+ * @return char* 
  */
-char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_database *database) {
+const char *XBOX_filename_print(const char *file_name, const char *full_path, XBOX_dircolor_database *database) {
     if (!database) {
         // database 为 NULL 说明不显示颜色
         return file_name;
@@ -317,3 +279,5 @@ char *XBOX_filename_print(char *file_name, const char *full_path, XBOX_dircolor_
     sprintf(result, "\033[%sm%s%s", color_code, file_name, XBOX_TERM_FONT_DEFAULT);
     return result;
 }
+
+

@@ -6,6 +6,7 @@ import json
 import difflib
 import re
 
+
 def print_diff(s1, s2):
     d = difflib.Differ()
     diff = list(d.compare(s1.splitlines(), s2.splitlines()))
@@ -43,7 +44,7 @@ def main():
     with open("./test/test.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    valgrind_pattern = re.compile(r'ERROR SUMMARY: (\d+) errors from (\d+) contexts')
+    valgrind_pattern = re.compile(r"ERROR SUMMARY: (\d+) errors from (\d+) contexts")
 
     for program_name in data:
         print(f"testing {program_name}:")
@@ -74,13 +75,19 @@ def main():
                 action_result = test_difference(command1.split(" "), command2.split(" "))
 
                 # 利用 valgrind 判断是否存在内存泄漏
-                valgrind_command = ["valgrind", "-s", my_program_name]
+                valgrind_command = [
+                    "valgrind",
+                    "-s",
+                    "--leak-check=full",
+                    "--show-leak-kinds=all",
+                    my_program_name,
+                ]
                 valgrind_output = subprocess.run(
                     valgrind_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
                 )
                 match_group = re.search(valgrind_pattern, valgrind_output.stderr)
-                if match_group.group(1) != '0':
-                    print(f'memory error: {match_group.group(1)}')
+                if match_group.group(1) != "0":
+                    print(f"memory error: {match_group.group(1)}")
 
                 if action_result == "passed":
                     passed_case_number += 1

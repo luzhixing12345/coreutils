@@ -30,7 +30,7 @@ tar -czf files.tar.gz file directory symlink fifo_pipe executable_file
 
 
 # 显示不同颜色的 ls 输出
-ls -l --color=auto
-# ../src/ls -l --color=always
+# ls -lF --color=auto
+../src/ls -l --color=always
 
 cd .. && rm -r temp

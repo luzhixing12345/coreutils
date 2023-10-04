@@ -1,8 +1,6 @@
 
-#pragma once
+#include "xstring.h"
 
-#include <stdlib.h>
-#include <string.h>
 /**
  * @brief 分割字符串, 返回数组.
  *
@@ -12,7 +10,7 @@
  * @param length 数组长度
  */
 void XBOX_splitStr(char *str, char c, char ***result, int *length) {
-    int n = strlen(str);
+    int n = (int)strlen(str);
     int number = 1;
     int i;
     for (i = 0; i < n; i++) {
@@ -26,7 +24,7 @@ void XBOX_splitStr(char *str, char c, char ***result, int *length) {
     token = strtok(str, split_str);
     i = 0;
     while (token != NULL) {
-        (*result)[i] = (char *)malloc(sizeof(char) * (strlen(token) + 1));
+        (*result)[i] = (char *)malloc(sizeof(char) * ((int)strlen(token) + 1));
         strcpy((*result)[i], token);
         token = strtok(NULL, split_str);
         i++;
@@ -58,7 +56,7 @@ int XBOX_freeSplitStr(char ***result, int length) {
  * @return int 未找到返回-1
  */
 int XBOX_findChar(const char *str, char c, int match_number) {
-    int n = strlen(str);
+    int n = (int)strlen(str);
     int pos = -1;
     int count = 0;
     for (int i = 0; i < n; i++) {
@@ -78,4 +76,51 @@ int XBOX_findChar(const char *str, char c, int match_number) {
         return pos;
     }
     return -1;
+}
+
+/**
+ * @brief (原地操作)去除字符串开头结尾的的空格和双引号 ""
+ *
+ * @param str
+ * @return void
+ */
+void XBOX_trim(char **str_p) {
+    char *new_str;
+    char *str = *str_p;
+    while (*str == ' ') {
+        str++;
+    }
+    if (*str == '\"') {
+        str++;
+    }
+    int length = (int)strlen(str);
+    while (str[length - 1] == ' ') {
+        length--;
+    }
+    if (str[length - 1] == '\"') {
+        length--;
+    }
+    new_str = (char *)malloc(length + 1);
+    strncpy(new_str, str, length);
+    new_str[length] = '\0';
+    free((char *)*str_p);
+    *str_p = (char *)new_str;
+}
+
+/**
+ * @brief 切片
+ *
+ * @param str
+ * @param start 起点index(包含)
+ * @param end 终点index(包含), end = -1 表示结尾
+ * @return char*(need free)
+ */
+char *XBOX_splice(const char *str, int start, int end) {
+    if (end == -1) {
+        end = (int)strlen(str) - 1;
+    }
+    char *s = (char *)malloc(sizeof(char) * (end - start + 2));
+    strncpy(s, str + start, end - start + 1);
+    s[end - start + 1] = '\0';
+    return s;
 }

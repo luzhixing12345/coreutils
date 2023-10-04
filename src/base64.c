@@ -147,9 +147,9 @@ int main(int argc, const char **argv) {
         XBOX_base64(input_str);
         free(input_str);
     } else {
-        char input_str[XBOX_MAX_INPUT_SIZE];
-        fgets(input_str, XBOX_MAX_INPUT_SIZE, stdin);
-        XBOX_base64(input_str);
+        char stdin_str[XBOX_MAX_INPUT_SIZE];
+        fgets(stdin_str, XBOX_MAX_INPUT_SIZE, stdin);
+        XBOX_base64(stdin_str);
     }
     XBOX_free_argparse(&parser);
     return 0;

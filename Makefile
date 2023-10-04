@@ -1,11 +1,14 @@
 
 
 CC = gcc
-CFLAGS = -Wall -Wunused -Werror -Wformat-security
+CFLAGS = -Wall -Wunused -Werror -Wformat-security -Wshadow -Wpedantic -Wstrict-aliasing -Wuninitialized -Wnull-dereference -Wformat=2
 TARGET = coreutils
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
 SRC_EXT = c
+# 头文件
+INCLUDE_PATH = include
+LDFLAGS = 
 # 测试文件夹
 TEST_PATH = test
 # 项目名字(库)
@@ -14,10 +17,16 @@ RELEASE = $(TARGET)
 LIB = lib$(TARGET).a
 # ------------------------- #
 
-SRC := $(wildcard $(SRC_PATH)/*.c)
+rwildcard = $(foreach d, $(wildcard $1*), $(call rwildcard,$d/,$2) \
+                        $(filter $2, $d))
+
+SRC := $(wildcard $(SRC_PATH)/*.$(SRC_EXT))
 OBJ = $(SRC:$(SRC_EXT)=o)
-HEADER = $(wildcard $(SRC_PATH)/xbox/*.h)
+THIRD_LIB = $(call rwildcard, $(INCLUDE_PATH), %.$(SRC_EXT))
+THIRD_LIB_OBJ = $(THIRD_LIB:$(SRC_EXT)=o)
 EXE = $(OBJ:%.o=%)
+
+CFLAGS += -I$(INCLUDE_PATH)
 
 ifeq ($(MAKECMDGOALS),debug)
 CFLAGS+=-g
@@ -27,11 +36,15 @@ all: $(EXE)
 
 debug: all
 
-$(EXE): %: %.o
-	$(CC) $< -o $@
+$(EXE): %: %.o $(THIRD_LIB_OBJ)
+	$(CC) $^ -o $@
 
-%.o: %.c $(HEADER)
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# dircolors 数据库中字符串过长
+$(SRC_PATH)/dircolors.o: $(SRC_PATH)/dircolors.c
+	$(CC) $(CFLAGS) -Wno-overlength-strings -c $< -o $@
 
 # ------------------------- #
 #          使用方法
@@ -57,12 +70,9 @@ test:
 	python test/test.py
 
 clean:
-	rm -f $(EXE) $(OBJ)
+	rm -f $(EXE) $(OBJ) $(THIRD_LIB_OBJ)
 release:
 	$(MAKE) -j4
 	mkdir $(RELEASE)
 	@cp $(EXE) $(RELEASE)/ 
 	tar -cvf $(TARGET).tar $(RELEASE)/
-
-clean_all:
-	rm -r $(RELEASE) $(RELEASE).tar

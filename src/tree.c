@@ -84,7 +84,7 @@ void XBOX_tree(XBOX_Dir *dir) {
     }
     // 深度 -L
     if (level > 0 && depth >= level) {
-        XBOX_free_directory(dir);
+        XBOX_freedir(dir);
         return;
     }
 
@@ -105,8 +105,8 @@ void XBOX_tree(XBOX_Dir *dir) {
             }
         }
         if (XBOX_IS_DIR(dir->dp[i])) {
-            for (int i = 0; i < depth; i++) {
-                if (!position[i]) {
+            for (int j = 0; j < depth; j++) {
+                if (!position[j]) {
                     printf("%s   ", file_fill);
                 } else {
                     printf("    ");
@@ -116,14 +116,15 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (no_color) {
                 printf("%s\n", XBOX_get_last_path(dir->name));
             } else {
-                printf("%s%s%s\n", XBOX_ANSI_COLOR_BLUE, XBOX_get_last_path(dir->dp[i]->name), XBOX_ANSI_COLOR_RESET);
+                printf("%s\n",
+                       XBOX_filename_print(XBOX_get_last_path(dir->dp[i]->name), dir->dp[i]->name, dircolor_database));
             }
 
             if (current_directory_only) {
                 continue;
             }
             char *sub_dir_name = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
-            XBOX_Dir *sub_dir = XBOX_open_dir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
+            XBOX_Dir *sub_dir = XBOX_opendir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
             sub_dir->parent = dir;
             sub_dir->is_last = i == last_index;
             XBOX_tree(sub_dir);
@@ -131,8 +132,8 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (directory_only) {
                 continue;
             }
-            for (int i = 0; i < depth; i++) {
-                if (!position[i]) {
+            for (int j = 0; j < depth; j++) {
+                if (!position[j]) {
                     printf("%s   ", file_fill);
                 } else {
                     printf("    ");
@@ -142,28 +143,30 @@ void XBOX_tree(XBOX_Dir *dir) {
             if (no_color) {
                 printf("%s", dir->dp[i]->name);
             } else {
-                printf("%s", XBOX_filename_print(dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
+                printf("%s",
+                       XBOX_filename_print(
+                           dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
             }
             printf("\n");
         }
     }
-    XBOX_free_directory(dir);
+    XBOX_freedir(dir);
 }
 
 int main(int argc, const char **argv) {
     argparse_option options[] = {
-        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
-        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_BOOLEAN(&all_files, "-a", NULL, "All files are listed.", NULL, NULL),
         XBOX_ARG_BOOLEAN(&directory_only, "-d", NULL, "List directories only.", NULL, NULL),
         XBOX_ARG_BOOLEAN(&current_directory_only, "-x", NULL, "Stay on current filesystem only.", NULL, NULL),
-        XBOX_ARG_STRS_GROUP(&directories, NULL, NULL, NULL, NULL, NULL),
+        XBOX_ARG_STRS_GROUP(&directories, NULL, NULL, NULL, NULL, "directory"),
         XBOX_ARG_BOOLEAN(&no_color, "-n", NULL, "Turn colorization off always (-C overrides).", NULL, "no-color"),
         XBOX_ARG_BOOLEAN(NULL, "-C", NULL, "Turn colorization on always.", NULL, "has-color"),
         XBOX_ARG_BOOLEAN(&unsort, "-U", NULL, "Leave files unsorted.", NULL, "unsort"),
         XBOX_ARG_BOOLEAN(&reverse_sort, "-r", NULL, "Reverse the order of the sort.", NULL, "reverse"),
-        XBOX_ARG_INT(&level, "-L", NULL, "Descend only level directories deep.", NULL, NULL),
+        XBOX_ARG_INT(&level, "-L", NULL, "Descend only level directories deep.", NULL, "level"),
         XBOX_ARG_BOOLEAN(&full_name, "-f", NULL, "Print the full path prefix for each file.", NULL, NULL),
+        XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
+        XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
         XBOX_ARG_END()};
 
     XBOX_argparse parser;
@@ -185,6 +188,10 @@ int main(int argc, const char **argv) {
         no_color = 0;
     }
 
+    if (!no_color) {
+        XBOX_init_dc_database(&dircolor_database);
+    }
+
     int n = XBOX_ismatch(&parser, "directory");
 
     if (XBOX_ismatch(&parser, "level")) {
@@ -197,7 +204,7 @@ int main(int argc, const char **argv) {
 
     if (n) {
         for (int i = 0; i < n; i++) {
-            XBOX_Dir *directory = XBOX_open_dir(directories[i], XBOX_DIR_IGNORE_CURRENT);
+            XBOX_Dir *directory = XBOX_opendir(directories[i], XBOX_DIR_IGNORE_CURRENT);
             directory->parent = NULL;
             XBOX_tree(directory);
             printf("\n%d directories", dir_count);
@@ -208,7 +215,7 @@ int main(int argc, const char **argv) {
         }
     } else {
         char *dir_name = ".";
-        XBOX_Dir *directory = XBOX_open_dir(dir_name, XBOX_DIR_IGNORE_CURRENT);
+        XBOX_Dir *directory = XBOX_opendir(dir_name, XBOX_DIR_IGNORE_CURRENT);
         directory->parent = NULL;
         XBOX_tree(directory);
         printf("\n%d directories", dir_count);
@@ -217,7 +224,9 @@ int main(int argc, const char **argv) {
         }
         printf("\n");
     }
-
+    if (dircolor_database) {
+        XBOX_free_dc_database(dircolor_database);
+    }
     XBOX_free_argparse(&parser);
     return 0;
 }

@@ -49,7 +49,7 @@ static int sort_cmp(const void *p1, const void *p2) {
  * @param terminal_width 当前的终端宽度
  * @return int
  */
-int calculate_row(XBOX_Dir *dir, int terminal_width) {
+int calculate_row(XBOX_Dir *dir) {
     int row = 1;
     int total_width = 0;
 
@@ -113,7 +113,7 @@ void ls(const char *dir_name) {
         flag = XBOX_DIR_IGNORE_HIDDEN;
     }
 
-    XBOX_Dir *dir = XBOX_open_dir(dir_name, flag);
+    XBOX_Dir *dir = XBOX_opendir(dir_name, flag);
     qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
 
     // 对于 stdout 非终端的情况, 依次输出即可
@@ -127,11 +127,11 @@ void ls(const char *dir_name) {
                            dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
             }
         }
-        XBOX_free_directory(dir);
+        XBOX_freedir(dir);
         return;
     }
 
-    int row = calculate_row(dir, terminal_width);
+    int row = calculate_row(dir);
 
     // 对于行数和目录文件数相同的情况, 全部竖排即可, 不需要计算对齐
     if (row == dir->count) {
@@ -144,7 +144,7 @@ void ls(const char *dir_name) {
                            dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
             }
         }
-        XBOX_free_directory(dir);
+        XBOX_freedir(dir);
         return;
     }
 
@@ -191,7 +191,7 @@ void ls(const char *dir_name) {
             if (!dircolor_database) {
                 printf("%-*s", ls_col_width[j], dir->dp[dp_index]->name);
             } else {
-                char *file_name = XBOX_filename_print(dir->dp[dp_index]->name,
+                const char *file_name = XBOX_filename_print(dir->dp[dp_index]->name,
                                                       XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL),
                                                       dircolor_database);
                 printf("%-s", file_name);
@@ -209,7 +209,7 @@ void ls(const char *dir_name) {
     }
 
     free(ls_col_width);
-    XBOX_free_directory(dir);
+    XBOX_freedir(dir);
     return;
 }
 
@@ -223,7 +223,7 @@ void ls_longlist(const char *dir_name) {
         flag = XBOX_DIR_IGNORE_HIDDEN;
     }
 
-    XBOX_Dir *dir = XBOX_open_dir(dir_name, flag);
+    XBOX_Dir *dir = XBOX_opendir(dir_name, flag);
     qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
 
     int total_block_number = 0;
@@ -236,7 +236,7 @@ void ls_longlist(const char *dir_name) {
     memset(&ls_align, 0, sizeof(longlist_align));
     for (int i = 0; i < dir->count; i++) {
         if (lstat(XBOX_path_join(dir->name, dir->dp[i]->name, NULL), &fs) < 0) {
-            XBOX_free_directory(dir);
+            XBOX_freedir(dir);
             perror("lstat");
             return;
         }
@@ -280,7 +280,7 @@ void ls_longlist(const char *dir_name) {
     for (int i = 0; i < dir->count; i++) {
         char *full_path = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
         if (lstat(full_path, &fs) < 0) {
-            XBOX_free_directory(dir);
+            XBOX_freedir(dir);
             perror("lstat");
             return;
         }
@@ -307,8 +307,7 @@ void ls_longlist(const char *dir_name) {
 
         // 格式化时间 TODO: 自由配置
         tm_modify = localtime(&fs.st_mtime);
-        int months_difference = (current_year - tm_modify->tm_year) * 12 +
-                           (current_month - tm_modify->tm_mon);
+        int months_difference = (current_year - tm_modify->tm_year) * 12 + (current_month - tm_modify->tm_mon);
         if (months_difference <= 6) {
             strftime(modify_time, sizeof(modify_time), "%b %e %H:%M", tm_modify);
             printf("%s ", modify_time);
@@ -318,7 +317,6 @@ void ls_longlist(const char *dir_name) {
         }
 
         printf("%s", XBOX_filename_print(dir->dp[i]->name, full_path, dircolor_database));
-        struct stat fs;
         if (lstat(full_path, &fs) != -1 && (S_ISLNK(fs.st_mode))) {
             char linkname[PATH_MAX];
             memset(linkname, 0, PATH_MAX);
@@ -332,7 +330,7 @@ void ls_longlist(const char *dir_name) {
             printf("\n");
         }
     }
-    XBOX_free_directory(dir);
+    XBOX_freedir(dir);
     return;
 }
 
