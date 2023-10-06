@@ -192,8 +192,8 @@ void ls(const char *dir_name) {
                 printf("%-*s", ls_col_width[j], dir->dp[dp_index]->name);
             } else {
                 const char *file_name = XBOX_filename_print(dir->dp[dp_index]->name,
-                                                      XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL),
-                                                      dircolor_database);
+                                                            XBOX_path_join(dir->name, dir->dp[dp_index]->name, NULL),
+                                                            dircolor_database);
                 printf("%-s", file_name);
                 // 虚拟控制序列导致字符串长度变化, 需要额外计算剩余空格长度
                 int left_space_number = ls_col_width[j] - strlen(dir->dp[dp_index]->name);

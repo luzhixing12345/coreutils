@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "xbox/xargparse.h"
 #include "xbox/xterm.h"
 #include "xbox/xutils.h"
@@ -30,7 +32,7 @@ static int sort_cmp(const void *p1, const void *p2) {
     }
 }
 
-void XBOX_tree(XBOX_Dir *dir) {
+void tree(XBOX_Dir *dir) {
     if (!unsort) {
         qsort(dir->dp, dir->count, sizeof(XBOX_File *), sort_cmp);
     }
@@ -113,12 +115,8 @@ void XBOX_tree(XBOX_Dir *dir) {
                 }
             }
             printf("%s%s ", i == last_index ? file_end : file_mid, file_item);
-            if (no_color) {
-                printf("%s\n", XBOX_get_last_path(dir->name));
-            } else {
-                printf("%s\n",
-                       XBOX_filename_print(XBOX_get_last_path(dir->dp[i]->name), dir->dp[i]->name, dircolor_database));
-            }
+            printf("%s\n",
+                   XBOX_filename_print(XBOX_get_last_path(dir->dp[i]->name), dir->dp[i]->name, dircolor_database));
 
             if (current_directory_only) {
                 continue;
@@ -127,7 +125,7 @@ void XBOX_tree(XBOX_Dir *dir) {
             XBOX_Dir *sub_dir = XBOX_opendir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
             sub_dir->parent = dir;
             sub_dir->is_last = i == last_index;
-            XBOX_tree(sub_dir);
+            tree(sub_dir);
         } else {
             if (directory_only) {
                 continue;
@@ -140,13 +138,10 @@ void XBOX_tree(XBOX_Dir *dir) {
                 }
             }
             printf("%s%s ", i == last_index ? file_end : file_mid, file_item);
-            if (no_color) {
-                printf("%s", dir->dp[i]->name);
-            } else {
-                printf("%s",
-                       XBOX_filename_print(
-                           dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
-            }
+            printf("%s",
+                   XBOX_filename_print(
+                       dir->dp[i]->name, XBOX_path_join(dir->name, dir->dp[i]->name, NULL), dircolor_database));
+
             printf("\n");
         }
     }
@@ -159,7 +154,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(&directory_only, "-d", NULL, "List directories only.", NULL, NULL),
         XBOX_ARG_BOOLEAN(&current_directory_only, "-x", NULL, "Stay on current filesystem only.", NULL, NULL),
         XBOX_ARG_STRS_GROUP(&directories, NULL, NULL, NULL, NULL, "directory"),
-        XBOX_ARG_BOOLEAN(&no_color, "-n", NULL, "Turn colorization off always (-C overrides).", NULL, "no-color"),
+        XBOX_ARG_BOOLEAN(&no_color, "-n", NULL, "Turn colorization off always (-C overrides).", NULL, NULL),
         XBOX_ARG_BOOLEAN(NULL, "-C", NULL, "Turn colorization on always.", NULL, "has-color"),
         XBOX_ARG_BOOLEAN(&unsort, "-U", NULL, "Leave files unsorted.", NULL, "unsort"),
         XBOX_ARG_BOOLEAN(&reverse_sort, "-r", NULL, "Reverse the order of the sort.", NULL, "reverse"),
@@ -185,11 +180,11 @@ int main(int argc, const char **argv) {
         printf("%s\n", XBOX_VERSION);
     }
     if (XBOX_ismatch(&parser, "has-color")) {
-        no_color = 0;
-    }
-
-    if (!no_color) {
         XBOX_init_dc_database(&dircolor_database);
+    } else {
+        if (!no_color && isatty(STDOUT_FILENO)) {
+            XBOX_init_dc_database(&dircolor_database);
+        }
     }
 
     int n = XBOX_ismatch(&parser, "directory");
@@ -206,7 +201,7 @@ int main(int argc, const char **argv) {
         for (int i = 0; i < n; i++) {
             XBOX_Dir *directory = XBOX_opendir(directories[i], XBOX_DIR_IGNORE_CURRENT);
             directory->parent = NULL;
-            XBOX_tree(directory);
+            tree(directory);
             printf("\n%d directories", dir_count);
             if (!directory_only) {
                 printf(", %d files", file_count);
@@ -217,7 +212,7 @@ int main(int argc, const char **argv) {
         char *dir_name = ".";
         XBOX_Dir *directory = XBOX_opendir(dir_name, XBOX_DIR_IGNORE_CURRENT);
         directory->parent = NULL;
-        XBOX_tree(directory);
+        tree(directory);
         printf("\n%d directories", dir_count);
         if (!directory_only) {
             printf(", %d files", file_count);

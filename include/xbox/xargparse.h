@@ -22,41 +22,61 @@
 
 #include "xstring.h"
 
-#define MAX(bind, b) ((bind) > (b) ? (bind) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define XBOX_LENGTH_MISMATCH 65
 #define XBOX_UNSUPPORTED_TYPE 66
 #define XBOX_REQUIRE_ARGUMENT 67
 #define XBOX_FORMAT_ERROR 68
 
-#define XBOX_HELP_INFO_INTERVAL 3  // 帮助信息列间距
+/*
+    -s            --long-name       help information...
+    -a <text>     --append <text>   Sentences that are too
+                                    long will be automatically
+                                    wrapped without breaking
+                                    the words.
+    -h            --help
+
+◄──►         ◄───►               ◄─►
+
+left_space   mid_space           right_space
+
+◄─────────────────────────────────────────────────────────────►
+
+                      total_space
+ */
+
+#define XBOX_HELP_INFO_LEFT_SPACE 2
+#define XBOX_HELP_INFO_MID_SPACE 3
+#define XBOX_HELP_INFO_RIGHT_SPACE 3
 #define XBOX_HELP_INFO_LENGTH 80   // 帮助信息 80 字符换行
+#define XBOX_HELP_INFO_INTERVAL 3  // 帮助信息列间距
 
-#define XBOX_ARGS_BUILD_ERROR "[Args Build Error]"
-#define XBOX_ARGS_PARSE_ERROR "[Args Parse Error]"
-#define XBOX_ARGS_PARSE_WARNING "[Args Parse Warning]"
+#define __XBOX_ARGS_BUILD_ERROR "[Args Build Error]"
+#define __XBOX_ARGS_PARSE_ERROR "[Args Parse Error]"
+#define __XBOX_ARGS_PARSE_WARNING "[Args Parse Warning]"
 
-#define XBOX_ARGS_NEED_FREE(type) \
-    (!((type == ARGPARSE_OPT_BOOLEAN) || (type == ARGPARSE_OPT_INT) || (type == ARGPARSE_OPT_INT_GROUP)))
+#define __XBOX_ARGS_NEED_FREE(type) \
+    (!((type == __ARGPARSE_OPT_BOOLEAN) || (type == __ARGPARSE_OPT_INT) || (type == __ARGPARSE_OPT_INT_GROUP)))
 
 enum argparse_option_type {
-    ARGPARSE_OPT_END,
-    ARGPARSE_OPT_BOOLEAN,
+    __ARGPARSE_OPT_END,
+    __ARGPARSE_OPT_BOOLEAN,
     // 匹配单个参数
-    ARGPARSE_OPT_INT,
-    ARGPARSE_OPT_STR,
+    __ARGPARSE_OPT_INT,
+    __ARGPARSE_OPT_STR,
     // 匹配组
-    ARGPARSE_OPT_INT_GROUP,
-    ARGPARSE_OPT_STR_GROUP,
+    __ARGPARSE_OPT_INT_GROUP,
+    __ARGPARSE_OPT_STR_GROUP,
     // 匹配多个参数
-    ARGPARSE_OPT_INTS,
-    ARGPARSE_OPT_STRS,
-    ARGPARSE_OPT_INTS_GROUP,
-    ARGPARSE_OPT_STRS_GROUP
+    __ARGPARSE_OPT_INTS,
+    __ARGPARSE_OPT_STRS,
+    __ARGPARSE_OPT_INTS_GROUP,
+    __ARGPARSE_OPT_STRS_GROUP
 };
 
 enum argparse_flag {
-    XBOX_ARGPARSE_IGNORE_UNKNOWN = 1,         // 忽略未知参数, 比如未声明过的 -m 
+    XBOX_ARGPARSE_IGNORE_UNKNOWN = 1,         // 忽略未知参数, 比如未声明过的 -m
     XBOX_ARGPARSE_ENABLE_STICK = 1 << 1,      // 允许参数粘连 -O1 -Iinclude/
     XBOX_ARGPARSE_ENABLE_EQUAL = 1 << 2,      // 允许参数等号 -i=123
     XBOX_ARGPARSE_ENABLE_ARG_STICK = 1 << 3,  // 允许boolean类型参数粘连
@@ -93,25 +113,25 @@ typedef struct {
 // built-in option macros
 
 #define XBOX_ARG_BOOLEAN(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_BOOLEAN, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_BOOLEAN, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_INT(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_INT, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_INT, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_STR(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_STR, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_STR, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_INTS(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_INTS, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_INTS, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_STRS(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_STRS, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_STRS, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_INT_GROUP(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_INT_GROUP, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_INT_GROUP, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_INTS_GROUP(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_INTS_GROUP, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_INTS_GROUP, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_STR_GROUP(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_STR_GROUP, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_STR_GROUP, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_STRS_GROUP(bind, short_name, long_name, help_info, append_info, name) \
-    { ARGPARSE_OPT_STRS_GROUP, bind, short_name, long_name, help_info, append_info, name }
+    { __ARGPARSE_OPT_STRS_GROUP, bind, short_name, long_name, help_info, append_info, name }
 #define XBOX_ARG_END() \
-    { ARGPARSE_OPT_END }
+    { __ARGPARSE_OPT_END }
 
 /**
  * @brief 初始化 argparser
