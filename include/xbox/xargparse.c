@@ -12,6 +12,7 @@
 #include "xargparse.h"
 
 #include <stdio.h>
+#include <string.h>
 
 /**
  * @brief 释放 parser 的内存, 请在程序结束/不再使用 parser 时调用
@@ -61,14 +62,33 @@ static void check_valid_options(XBOX_argparse *parser) {
     // group 不重名
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
+        // boolean 类型的参数不应该有 append_info
+        if (option->type == __ARGPARSE_OPT_BOOLEAN && option->append_info) {
+            char *option_name;
+            if (option->short_name) {
+                option_name = option->short_name;
+            } else if (option->long_name) {
+                option_name = option->long_name;
+            } else if (option->name) {
+                option_name = option->name;
+            } else {
+                option_name = (char *)"unknown";
+            }
+            fprintf(stderr,
+                    "%s: boolean option [%s] should not follow with append info [%s]\n",
+                    __XBOX_ARGS_BUILD_ERROR,
+                    option_name,
+                    option->append_info);
+            exit(XBOX_FORMAT_ERROR);
+        }
+        // 检查长参数合法性
         if (option->long_name) {
             char *l_name = XBOX_splice(option->long_name, 2, -1);
             char *p = l_name;
 
-            // long_name 合法性 -> 小写 - _
+            // long_name 合法性: a-z-_
             if (check_valid_character(p)) {
-                fprintf(
-                    stderr, "%s: only [bind-z_-] are legal characters instead of [%s]\n", __XBOX_ARGS_BUILD_ERROR, p);
+                fprintf(stderr, "%s: only [a-z_-] are legal characters instead of [%s]\n", __XBOX_ARGS_BUILD_ERROR, p);
                 free(p);
                 exit(XBOX_FORMAT_ERROR);
             }
@@ -218,32 +238,81 @@ static int option_cmp(const void *bind, const void *b) {
  * @param parser
  */
 void XBOX_argparse_info(XBOX_argparse *parser) {
+    int usage_info_length = 0;
     printf("Usage: %s ", parser->name);
+    usage_info_length += 7 + strlen(parser->name) + 1;
+
     int counter = 0;
-    int group_number = 0;  // 没有 name 的捕获组的 id
+    char info_array[XBOX_HELP_INFO_LENGTH];  // 用于下面输出的信息 option_info & help_info
+
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == __ARGPARSE_OPT_STR_GROUP || option->type == __ARGPARSE_OPT_INT_GROUP) {
             if (option->name) {
                 printf("[%s] ", option->name);
+                usage_info_length += 3 + strlen(option->name);
             } else {
-                printf("[Group-%d] ", group_number);
+                printf("[Group] ");
+                usage_info_length += 8;
             }
-            group_number++;
             counter++;
         }
         if (option->type == __ARGPARSE_OPT_STRS_GROUP || option->type == __ARGPARSE_OPT_INTS_GROUP) {
             if (option->name) {
                 printf("[%s]... ", option->name);
+                usage_info_length += 6 + strlen(option->name);
             } else {
-                printf("[Group-%d]... ", group_number);
+                printf("[Group]... ");
+                usage_info_length += 11;
             }
-            group_number++;
             counter++;
         }
     }
     if (counter != parser->args_number) {
-        printf("[OPTION]... ");
+        // 留给 option 的剩余距离
+        int remain_option_distance = XBOX_HELP_INFO_LENGTH - usage_info_length;
+        info_array[0] = '[';
+        for (int i = 0; i < parser->args_number; i++) {
+            argparse_option *option = &(parser->options[i]);
+            if (option->type == __ARGPARSE_OPT_INT_GROUP || option->type == __ARGPARSE_OPT_STR_GROUP ||
+                option->type == __ARGPARSE_OPT_STRS_GROUP || option->type == __ARGPARSE_OPT_INTS_GROUP) {
+                continue;
+            }
+
+            char *p = info_array + 1;
+            int append_length = 0;
+            if (option->append_info) {
+                append_length = strlen(option->append_info);
+            }
+            if (option->short_name) {
+                strcpy(p, option->short_name);
+                p += 2;
+                if (option->append_info) {
+                    strcpy(p, option->append_info);
+                    p += append_length;
+                }
+            }
+            if (option->long_name) {
+                if (option->short_name) {
+                    *p++ = ' ';
+                }
+                strcpy(p, option->long_name);
+                p += strlen(option->long_name);
+                if (option->append_info) {
+                    strcpy(p, option->append_info);
+                    p += append_length;
+                }
+            }
+            *p++ = ']';
+            *p = 0;
+            if (p - info_array <= remain_option_distance) {
+                printf("%s", info_array);
+                remain_option_distance -= p - info_array;
+            } else {
+                printf("\n%*s%s", usage_info_length, "", info_array);
+                remain_option_distance = XBOX_HELP_INFO_LENGTH - usage_info_length - (p - info_array);
+            }
+        }
     }
     printf("\n");
     if (parser->description) {
@@ -289,7 +358,6 @@ left_space   mid_space           right_space
         qsort(parser->options, (size_t)parser->args_number, sizeof(argparse_option), option_cmp);
     }
 
-    char help_info[XBOX_HELP_INFO_LENGTH];
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
         if (option->type == __ARGPARSE_OPT_INT_GROUP || option->type == __ARGPARSE_OPT_STR_GROUP ||
@@ -326,14 +394,13 @@ left_space   mid_space           right_space
             int help_info_space = XBOX_HELP_INFO_LENGTH - XBOX_HELP_INFO_LEFT_SPACE - 2 - short_append_align -
                                   XBOX_HELP_INFO_MID_SPACE - long_opt_append_align - XBOX_HELP_INFO_RIGHT_SPACE;
             if (help_info_length > help_info_space) {
-                memset(help_info, 0, XBOX_HELP_INFO_LENGTH);
                 int p = 0;
                 while (help_info_length > help_info_space) {
-                    strncpy(help_info, option->help_info + p, (size_t)help_info_space);
-                    help_info[help_info_space] = 0;
+                    strncpy(info_array, option->help_info + p, (size_t)help_info_space);
+                    info_array[help_info_space] = 0;
                     p += help_info_space;
                     printf("%s\n%*s",
-                           help_info,
+                           info_array,
                            XBOX_HELP_INFO_LEFT_SPACE + 2 + short_append_align + XBOX_HELP_INFO_MID_SPACE +
                                long_opt_append_align + XBOX_HELP_INFO_RIGHT_SPACE,
                            "");

@@ -158,7 +158,7 @@ int main(int argc, const char **argv) {
         XBOX_ARG_BOOLEAN(NULL, "-C", NULL, "Turn colorization on always.", NULL, "has-color"),
         XBOX_ARG_BOOLEAN(&unsort, "-U", NULL, "Leave files unsorted.", NULL, "unsort"),
         XBOX_ARG_BOOLEAN(&reverse_sort, "-r", NULL, "Reverse the order of the sort.", NULL, "reverse"),
-        XBOX_ARG_INT(&level, "-L", NULL, "Descend only level directories deep.", NULL, "level"),
+        XBOX_ARG_INT(&level, "-L", NULL, "Descend only level directories deep.", "<level>", "level"),
         XBOX_ARG_BOOLEAN(&full_name, "-f", NULL, "Print the full path prefix for each file.", NULL, NULL),
         XBOX_ARG_BOOLEAN(NULL, "-h", "--help", "display this help and exit", NULL, "help"),
         XBOX_ARG_BOOLEAN(NULL, "-v", "--version", "output version information and exit", NULL, "version"),
