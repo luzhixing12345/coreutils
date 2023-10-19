@@ -2,14 +2,18 @@
 #include "xutils.h"
 
 #include <linux/limits.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
 /**
- * @brief 打开一个目录并读取其中所有的文件和目录
+ * @brief 打开一个目录并读取该目录下所有的文件和目录
  *
  * @param path 路径名
- * @param flag XBOX_DIR_IGNORE_HIDDEN: 不包含.开头的 XBOX_DIR_IGNORE_CURRENT: 不包含.和.. XBOX_DIR_ALL: 全部包含
- * @return XBOX_Dir* (需要释放)
+ * @param flag
+    - XBOX_DIR_IGNORE_HIDDEN: 不包含.开头的
+    - XBOX_DIR_IGNORE_CURRENT: 不包含.和..
+    - XBOX_DIR_ALL: 全部包含
+ * @return XBOX_Dir* 需要调用 XBOX_freedir 释放
  */
 XBOX_Dir* XBOX_opendir(const char* path, int flag) {
     DIR* dir;
@@ -29,19 +33,19 @@ XBOX_Dir* XBOX_opendir(const char* path, int flag) {
     XBOX_Dir* directory = (XBOX_Dir*)malloc(sizeof(XBOX_Dir));
     memset(directory, 0, sizeof(XBOX_Dir));
     while ((entry = readdir(dir)) != NULL) {
-        if (flag == 0 && entry->d_name[0] == '.') {
+        if ((flag & XBOX_DIR_IGNORE_HIDDEN) && entry->d_name[0] == '.') {
             continue;
-        } else if (flag == 1 && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+        }
+        if ((flag & XBOX_DIR_IGNORE_CURRENT) &&
+            (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
             continue;
+        }
+        directory->count++;
+        if (entry->d_type == DT_DIR) {
+            // 目录
+            directory->d_count++;
         } else {
-            // flag = 2
-            directory->count++;
-            if (entry->d_type == DT_DIR) {
-                // 目录
-                directory->d_count++;
-            } else {
-                directory->f_count++;
-            }
+            directory->f_count++;
         }
     }
     rewinddir(dir);
@@ -51,17 +55,18 @@ XBOX_Dir* XBOX_opendir(const char* path, int flag) {
     }
     int i = 0;
     while ((entry = readdir(dir)) != NULL) {
-        if (flag == 0 && entry->d_name[0] == '.') {
+        if ((flag & XBOX_DIR_IGNORE_HIDDEN) && entry->d_name[0] == '.') {
             continue;
-        } else if (flag == 1 && (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
-            continue;
-        } else {
-            length = strlen(entry->d_name);
-            strncpy(directory->dp[i]->name, entry->d_name, length);
-            directory->dp[i]->name[length] = 0;
-            directory->dp[i]->type = entry->d_type;
-            i++;
         }
+        if ((flag & XBOX_DIR_IGNORE_CURRENT) &&
+            (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))) {
+            continue;
+        }
+        length = strlen(entry->d_name);
+        strncpy(directory->dp[i]->name, entry->d_name, length);
+        directory->dp[i]->name[length] = 0;
+        directory->dp[i]->type = entry->d_type;
+        i++;
     }
     length = strlen(path);
     strncpy(directory->name, path, length);

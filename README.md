@@ -11,8 +11,10 @@ GNU coreutils 的实现
 make -j4
 
 ## 打包编译
-make release -j4
+make release
 ```
+
+所有可执行文件在 src/
 
 ## 文档
 

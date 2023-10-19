@@ -468,7 +468,7 @@ argparse_option *check_argparse_soptions(XBOX_argparse *parser, const char *str)
  * @param str
  * @return int 如果已经没有可解析的组则出现错误,返回1
  */
-int check_argparse_groups(XBOX_argparse *parser, const char *str) {
+int check_argparse_groups(XBOX_argparse *parser, const char *str, int *match_pos) {
     for (int i = 0; i < parser->args_number; i++) {
         argparse_option *option = &(parser->options[i]);
 
@@ -478,6 +478,7 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
                     free(option->value);
                 }
                 option->value = (char *)malloc(sizeof(char) * ((int)strlen(str) + 1));
+                option->pos = *match_pos++;
                 strcpy(option->value, str);
                 // printf("matched [%s] for group [%s]\n", option->value, option->name);
                 value_pass(parser, option);
@@ -489,6 +490,7 @@ int check_argparse_groups(XBOX_argparse *parser, const char *str) {
                 free(option->value);
             }
             option->value = (char *)malloc(sizeof(char) * ((int)strlen(str) + 1));
+            option->pos = *match_pos++;
             strcpy(option->value, str);
             // printf("[%d]: matched [%s] for group [%s]\n", __LINE__, option->value,
             // option->name);
@@ -739,7 +741,7 @@ void XBOX_argparse_parse(XBOX_argparse *parser, int argc, const char **argv) {
         }
 
         // 当作正常参数传入
-        if (check_argparse_groups(parser, argv[i])) {
+        if (check_argparse_groups(parser, argv[i], &match_pos)) {
             if (!(parser->flag & XBOX_ARGPARSE_IGNORE_UNKNOWN)) {
                 fprintf(stderr, "%s: [%s] doesn't match any left group\n", __XBOX_ARGS_PARSE_WARNING, argv[i]);
             }
@@ -778,15 +780,15 @@ int XBOX_ismatch(XBOX_argparse *parser, char *name) {
 }
 
 /**
- * @brief 查找参数匹配的位置, 从 0 起
+ * @brief 查找参数匹配的位置, 从 1 起
 
    ./main 100 -i 200
           |    | |
-          0    1 2
+          1    2 3
 
    ./main -abc -d 100
            |||  | |
-           012  3 4
+           123  4 5
  *
  * @param parser
  * @param name

@@ -122,7 +122,7 @@ void tree(XBOX_Dir *dir) {
                 continue;
             }
             char *sub_dir_name = XBOX_path_join(dir->name, dir->dp[i]->name, NULL);
-            XBOX_Dir *sub_dir = XBOX_opendir(sub_dir_name, XBOX_DIR_IGNORE_CURRENT);
+            XBOX_Dir *sub_dir = XBOX_opendir(sub_dir_name, all_files);
             sub_dir->parent = dir;
             sub_dir->is_last = i == last_index;
             tree(sub_dir);
@@ -178,6 +178,8 @@ int main(int argc, const char **argv) {
 
     if (XBOX_ismatch(&parser, "version")) {
         printf("%s\n", XBOX_VERSION);
+        XBOX_free_argparse(&parser);
+        return 0;
     }
     if (XBOX_ismatch(&parser, "has-color")) {
         XBOX_init_dc_database(&dircolor_database);
@@ -197,9 +199,15 @@ int main(int argc, const char **argv) {
         }
     }
 
+    if (all_files) {
+        all_files = XBOX_DIR_IGNORE_CURRENT;
+    } else {
+        all_files = XBOX_DIR_IGNORE_HIDDEN;
+    }
+
     if (n) {
         for (int i = 0; i < n; i++) {
-            XBOX_Dir *directory = XBOX_opendir(directories[i], XBOX_DIR_IGNORE_CURRENT);
+            XBOX_Dir *directory = XBOX_opendir(directories[i], all_files);
             directory->parent = NULL;
             tree(directory);
             printf("\n%d directories", dir_count);
@@ -210,7 +218,7 @@ int main(int argc, const char **argv) {
         }
     } else {
         char *dir_name = ".";
-        XBOX_Dir *directory = XBOX_opendir(dir_name, XBOX_DIR_IGNORE_CURRENT);
+        XBOX_Dir *directory = XBOX_opendir(dir_name, all_files);
         directory->parent = NULL;
         tree(directory);
         printf("\n%d directories", dir_count);

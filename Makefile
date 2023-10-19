@@ -2,6 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -Wunused -Werror -Wformat-security -Wshadow -Wpedantic -Wstrict-aliasing -Wuninitialized -Wnull-dereference -Wformat=2
+MAKEFLAGS += --no-print-directory
 TARGET = coreutils
 SRC_PATH = src
 # 搜索的后缀(.cpp -> .h)
@@ -71,8 +72,14 @@ test:
 
 clean:
 	rm -f $(EXE) $(OBJ) $(THIRD_LIB_OBJ)
+
+clean_all:
+	$(MAKE) clean
+	rm -r $(RELEASE)/ $(TARGET).tar
 release:
 	$(MAKE) -j4
-	mkdir $(RELEASE)
+	@mkdir $(RELEASE)
 	@cp $(EXE) $(RELEASE)/ 
-	tar -cvf $(TARGET).tar $(RELEASE)/
+	@tar -cf $(TARGET).tar $(RELEASE)/
+	@echo executable files generated in $(RELEASE)/
+	@echo packed $(TARGET).tar

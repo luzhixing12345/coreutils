@@ -16,9 +16,10 @@
 #define XBOX_TYPE(t) #t
 #define XBOX_NAME(name) _##name
 
-#define XBOX_DIR_IGNORE_HIDDEN 0
-#define XBOX_DIR_IGNORE_CURRENT 1
-#define XBOX_DIR_ALL 2
+#define XBOX_DIR_ALL 0
+#define XBOX_DIR_IGNORE_HIDDEN 1
+#define XBOX_DIR_IGNORE_CURRENT (1<<1)
+
 
 #define XBOX_PRINT_BUFFER_SIZE 1024
 #define XBOX_MAX_INPUT_SIZE 1024
